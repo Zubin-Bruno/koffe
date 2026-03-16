@@ -40,6 +40,21 @@
       <p class="card-notes">{{ coffee.attributes.tasting_notes | join(" · ") }}</p>
       {% endif %}
 
+      {% if coffee.acidity or coffee.sweetness or coffee.body %}
+      <div class="card-intensity">
+        {% for label, value in [("Acidez", coffee.acidity), ("Dulzor", coffee.sweetness), ("Cuerpo", coffee.body)] %}
+        {% if value %}
+        <div class="intensity-row">
+          <span class="intensity-label">{{ label }}</span>
+          <span class="intensity-dots">
+            {% for i in range(1, 6) %}<span class="dot {% if i <= value %}dot--on{% endif %}"></span>{% endfor %}
+          </span>
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+      {% endif %}
+
       <div class="card-footer">
         <span class="card-price">
           {% if coffee.price_display %}

@@ -211,6 +211,45 @@ main {
   color: var(--text-muted);
 }
 
+/* ── Intensity bars ───────────────────────────────────────── */
+.card-intensity {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.intensity-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.intensity-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  width: 2.8rem;
+  flex-shrink: 0;
+}
+
+.intensity-dots {
+  display: flex;
+  gap: 3px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.dot--on {
+  background: var(--accent);
+}
+
 /* ── Card footer ──────────────────────────────────────────── */
 .card-footer {
   margin-top: auto;
