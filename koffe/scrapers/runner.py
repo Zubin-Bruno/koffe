@@ -119,6 +119,11 @@ def _upsert_coffees(
             existing.origin_country = data.origin_country
             existing.process = data.process
             existing.roast_level = data.roast_level
+            existing.acidity = data.acidity
+            existing.sweetness = data.sweetness
+            existing.body = data.body
+            existing.variety = data.variety
+            existing.altitude_masl = data.altitude_masl
             existing.attributes = data.attributes
             existing.last_seen_at = now
         else:
@@ -137,6 +142,11 @@ def _upsert_coffees(
                     origin_country=data.origin_country,
                     process=data.process,
                     roast_level=data.roast_level,
+                    acidity=data.acidity,
+                    sweetness=data.sweetness,
+                    body=data.body,
+                    variety=data.variety,
+                    altitude_masl=data.altitude_masl,
                     attributes=data.attributes,
                     first_seen_at=now,
                     last_seen_at=now,
