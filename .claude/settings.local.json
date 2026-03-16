@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git config:*)",
+      "Bash(cmd /c gh auth status 2>&1)",
+      "Bash(uv init:*)",
+      "Bash(which python3:*)",
+      "Bash(/c/Users/Bruno.DESKTOP-HBBD5DE/AppData/Local/Programs/Python/Python313/Scripts/uv.exe --version)",
+      "Bash(pip install:*)",
+      "Bash(cd:*)",
+      "Bash(cat:*)",
+      "Bash(python:*)",
+      "Bash(ls:*)"
+    ]
+  }
+}
