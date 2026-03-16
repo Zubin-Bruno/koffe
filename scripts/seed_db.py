@@ -36,6 +36,13 @@ SAMPLE_ROASTERS = [
         "country": "Argentina",
         "scraper_module": "koffe.scrapers.sites.cuervo_cafe",
     },
+    {
+        "name": "Puerto Blest Tostadores",
+        "slug": "puerto-blest",
+        "website_url": "https://www.cafepuertoblest.com",
+        "country": "Argentina",
+        "scraper_module": "koffe.scrapers.sites.puerto_blest",
+    },
 ]
 
 SAMPLE_COFFEES = [
