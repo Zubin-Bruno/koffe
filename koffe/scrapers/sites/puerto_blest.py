@@ -86,6 +86,16 @@ class PuertoBlestScraper(BaseScraper):
         page = await browser.new_page()
         try:
             await page.goto(url, wait_until="networkidle", timeout=60000)
+
+            # Check availability via the add-to-cart button (Playwright, before closing)
+            # Tiendanube hides a "Sin stock" label in the template even for available products,
+            # so we check whether the cart button is present and not disabled.
+            add_btn = page.locator("input.js-addtocart, button.js-addtocart")
+            is_available = (
+                await add_btn.count() > 0
+                and await add_btn.first.is_enabled()
+            )
+
             html = await page.content()
         finally:
             await page.close()
@@ -145,10 +155,6 @@ class PuertoBlestScraper(BaseScraper):
             raw_variety = self._extract_field(page_text, ["varietal", "variedad", "variety"])
             variety = clean_text(raw_variety) if raw_variety else None
         altitude_masl = self._extract_altitude(page_text)
-
-        # Availability — Tiendanube uses a "Sold out" or "Agotado" indicator
-        stock_text = page_text.lower()
-        is_available = "agotado" not in stock_text and "sin stock" not in stock_text
 
         # Tasting notes from description
         tasting_notes = self._extract_tasting_notes(page_text)
