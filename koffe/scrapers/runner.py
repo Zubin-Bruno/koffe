@@ -7,6 +7,10 @@ Usage:
 """
 
 import importlib
+import mimetypes
+import pathlib
+import re
+import urllib.request
 from datetime import datetime
 
 from loguru import logger
@@ -16,6 +20,42 @@ from sqlalchemy.orm import Session
 from koffe.db.database import SessionLocal
 from koffe.db.models import Coffee, Roaster, ScrapeRun
 from koffe.scrapers.base import BaseScraper, CoffeeData
+
+IMAGES_DIR = pathlib.Path("data/images")
+
+
+def _download_image(url: str, roaster_slug: str, external_id: str) -> str | None:
+    """Download an external image and save it locally. Returns the local URL path."""
+    IMAGES_DIR.mkdir(parents=True, exist_ok=True)
+
+    # Derive extension from URL or default to .jpg
+    url_path = url.split("?")[0]
+    ext = pathlib.Path(url_path).suffix.lower()
+    if ext not in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
+        ext = ".jpg"
+
+    safe_id = re.sub(r"[^\w-]", "_", external_id)[:80]
+    filename = f"{roaster_slug}_{safe_id}{ext}"
+    dest = IMAGES_DIR / filename
+
+    if dest.exists():
+        return f"/images/{filename}"
+
+    try:
+        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+        with urllib.request.urlopen(req, timeout=10) as resp:
+            content_type = resp.headers.get("Content-Type", "")
+            if "png" in content_type:
+                ext = ".png"
+            elif "webp" in content_type:
+                ext = ".webp"
+            filename = f"{roaster_slug}_{safe_id}{ext}"
+            dest = IMAGES_DIR / filename
+            dest.write_bytes(resp.read())
+        return f"/images/{filename}"
+    except Exception as exc:
+        logger.warning(f"Image download failed for {url}: {exc}")
+        return None
 
 
 async def run_all_scrapers() -> None:
@@ -99,6 +139,12 @@ def _upsert_coffees(
 
     for data in coffees_data:
         seen_external_ids.add(data.external_id)
+
+        # Cache external images locally
+        if data.image_url and data.image_url.startswith("http"):
+            local_path = _download_image(data.image_url, roaster.slug, data.external_id)
+            if local_path:
+                data.image_url = local_path
 
         existing = (
             db.query(Coffee)
