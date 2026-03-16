@@ -1,0 +1,58 @@
+{% extends "base.html" %}
+{% block title %}Koffe — Explorar cafés{% endblock %}
+
+{% block content %}
+<section class="filters">
+  <form
+    hx-get="/coffees"
+    hx-target="#results"
+    hx-trigger="change, submit"
+    hx-push-url="true"
+    id="filter-form"
+  >
+    <div class="filter-row">
+
+      <label>
+        Origen
+        <select name="origin">
+          <option value="">Todos</option>
+          {% for o in origins %}
+          <option value="{{ o }}" {% if filters.origin == o %}selected{% endif %}>{{ o }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        Proceso
+        <select name="process">
+          <option value="">Todos</option>
+          {% for p in processes %}
+          <option value="{{ p }}" {% if filters.process == p %}selected{% endif %}>{{ p }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        Tueste
+        <select name="roast_level">
+          <option value="">Todos</option>
+          {% for r in roast_levels %}
+          <option value="{{ r }}" {% if filters.roast_level == r %}selected{% endif %}>{{ r }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label class="checkbox-label">
+        <input type="checkbox" name="available_only" value="true"
+          {% if filters.available_only %}checked{% endif %} />
+        Solo disponibles
+      </label>
+
+    </div>
+  </form>
+</section>
+
+<div id="results">
+  {% include "coffee_cards.html" %}
+</div>
+{% endblock %}

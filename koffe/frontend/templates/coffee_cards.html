@@ -1,0 +1,63 @@
+<p class="results-count">{{ total }} café{{ 's' if total != 1 else '' }} encontrado{{ 's' if total != 1 else '' }}</p>
+
+<div class="card-grid">
+{% for coffee in coffees %}
+  <article class="card {% if not coffee.is_available %}card--unavailable{% endif %}">
+
+    {% if coffee.image_url %}
+    <div class="card-image">
+      <a href="{{ coffee.url }}" target="_blank" rel="noopener">
+        <img src="{{ coffee.image_url }}" alt="{{ coffee.name }}" loading="lazy" />
+      </a>
+    </div>
+    {% endif %}
+
+    <div class="card-body">
+      <h2 class="card-name">
+        <a href="{{ coffee.url }}" target="_blank" rel="noopener">{{ coffee.name }}</a>
+      </h2>
+
+      <div class="card-tags">
+        {% if coffee.origin_country %}
+        <span class="tag tag--origin">{{ coffee.origin_country }}</span>
+        {% endif %}
+        {% if coffee.process %}
+        <span class="tag tag--process">{{ coffee.process }}</span>
+        {% endif %}
+        {% if coffee.roast_level %}
+        <span class="tag tag--roast">{{ coffee.roast_level }}</span>
+        {% endif %}
+        {% if not coffee.is_available %}
+        <span class="tag tag--sold-out">Agotado</span>
+        {% endif %}
+      </div>
+
+      {% if coffee.description %}
+      <p class="card-description">{{ coffee.description[:200] }}{% if coffee.description|length > 200 %}…{% endif %}</p>
+      {% endif %}
+
+      {% if coffee.attributes.tasting_notes %}
+      <p class="card-notes">{{ coffee.attributes.tasting_notes | join(" · ") }}</p>
+      {% endif %}
+
+      <div class="card-footer">
+        <span class="card-price">
+          {% if coffee.price_display %}
+            {{ coffee.price_display }} {{ coffee.currency }}
+          {% else %}
+            —
+          {% endif %}
+        </span>
+        {% if coffee.weight_grams %}
+        <span class="card-weight">{{ coffee.weight_grams }}g</span>
+        {% endif %}
+        <a class="card-buy-btn" href="{{ coffee.url }}" target="_blank" rel="noopener">
+          Comprar →
+        </a>
+      </div>
+    </div>
+  </article>
+{% else %}
+  <p class="empty-state">No se encontraron cafés con esos filtros.</p>
+{% endfor %}
+</div>

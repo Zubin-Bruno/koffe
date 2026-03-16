@@ -1,0 +1,279 @@
+/* ── Reset & base ─────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg: #f8f5f0;
+  --surface: #ffffff;
+  --border: #e2d9cf;
+  --text: #2d2420;
+  --text-muted: #7a6860;
+  --accent: #c0392b;
+  --accent-hover: #a93226;
+  --tag-bg: #ede8e2;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  line-height: 1.5;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+a { color: inherit; text-decoration: none; }
+a:hover { text-decoration: underline; }
+
+/* ── Header ───────────────────────────────────────────────── */
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 1rem 2rem;
+  display: flex;
+  align-items: baseline;
+  gap: 1rem;
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+}
+
+.tagline {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+}
+
+/* ── Main ─────────────────────────────────────────────────── */
+main {
+  flex: 1;
+  max-width: 1400px;
+  margin: 0 auto;
+  padding: 2rem;
+  width: 100%;
+}
+
+/* ── Filters ──────────────────────────────────────────────── */
+.filters {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1.25rem 1.5rem;
+  margin-bottom: 1.5rem;
+  box-shadow: var(--shadow);
+}
+
+.filter-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: flex-end;
+}
+
+.filter-row label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+}
+
+.filter-row select {
+  padding: 0.4rem 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--bg);
+  color: var(--text);
+  font-size: 0.9rem;
+  cursor: pointer;
+  min-width: 140px;
+}
+
+.checkbox-label {
+  flex-direction: row !important;
+  align-items: center;
+  gap: 0.5rem !important;
+  font-size: 0.875rem !important;
+  text-transform: none !important;
+  letter-spacing: 0 !important;
+  color: var(--text) !important;
+  padding-bottom: 0.1rem;
+}
+
+/* ── Results count ────────────────────────────────────────── */
+.results-count {
+  color: var(--text-muted);
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+/* ── Card grid ────────────────────────────────────────────── */
+.card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 1.25rem;
+}
+
+/* ── Card ─────────────────────────────────────────────────── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+
+.card--unavailable {
+  opacity: 0.6;
+}
+
+.card-image {
+  aspect-ratio: 4/3;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.card-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.2s;
+}
+
+.card:hover .card-image img {
+  transform: scale(1.03);
+}
+
+.card-body {
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  flex: 1;
+}
+
+.card-name {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.card-name a:hover { text-decoration: underline; }
+
+/* ── Tags ─────────────────────────────────────────────────── */
+.card-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.tag {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 0.2rem 0.5rem;
+  border-radius: 99px;
+  background: var(--tag-bg);
+  color: var(--text-muted);
+}
+
+.tag--origin  { background: #dbeafe; color: #1d4ed8; }
+.tag--process { background: #dcfce7; color: #15803d; }
+.tag--roast   { background: #fef3c7; color: #92400e; }
+.tag--sold-out { background: #fee2e2; color: #b91c1c; }
+
+/* ── Card body text ───────────────────────────────────────── */
+.card-description {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
+.card-notes {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--text-muted);
+}
+
+/* ── Card footer ──────────────────────────────────────────── */
+.card-footer {
+  margin-top: auto;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.card-price {
+  font-size: 1rem;
+  font-weight: 700;
+  flex: 1;
+}
+
+.card-weight {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.card-buy-btn {
+  background: var(--accent);
+  color: white;
+  padding: 0.35rem 0.85rem;
+  border-radius: var(--radius);
+  font-size: 0.82rem;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.card-buy-btn:hover {
+  background: var(--accent-hover);
+  text-decoration: none;
+}
+
+/* ── Empty state ──────────────────────────────────────────── */
+.empty-state {
+  grid-column: 1 / -1;
+  text-align: center;
+  color: var(--text-muted);
+  padding: 3rem;
+  font-size: 1rem;
+}
+
+/* ── Footer ───────────────────────────────────────────────── */
+footer {
+  text-align: center;
+  padding: 1.5rem;
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  border-top: 1px solid var(--border);
+}
+
+/* ── HTMX loading indicator ───────────────────────────────── */
+.htmx-indicator { opacity: 0; transition: opacity 0.15s; }
+.htmx-request .htmx-indicator { opacity: 1; }
+
+/* ── Responsive ───────────────────────────────────────────── */
+@media (max-width: 600px) {
+  header { padding: 0.75rem 1rem; }
+  main { padding: 1rem; }
+  .filter-row { flex-direction: column; }
+  .filter-row select { min-width: 100%; }
+}
