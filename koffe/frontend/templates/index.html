@@ -43,36 +43,64 @@
       </label>
 
       <label>
-        Acidez min.
-        <select name="acidity" class="filter-narrow">
-          <option value="">—</option>
-          {% for i in range(1, 6) %}
-          <option value="{{ i }}" {% if filters.acidity|string == i|string %}selected{% endif %}>{{ i }}</option>
-          {% endfor %}
-        </select>
+        Acidez
+        <div class="filter-range">
+          <select name="acidity_min" class="filter-narrow">
+            <option value="">Min</option>
+            {% for i in range(1, 6) %}
+            <option value="{{ i }}" {% if filters.acidity_min|string == i|string %}selected{% endif %}>{{ i }}</option>
+            {% endfor %}
+          </select>
+          <span class="range-dash">—</span>
+          <select name="acidity_max" class="filter-narrow">
+            <option value="">Max</option>
+            {% for i in range(1, 6) %}
+            <option value="{{ i }}" {% if filters.acidity_max|string == i|string %}selected{% endif %}>{{ i }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </label>
 
       <label>
-        Dulzor min.
-        <select name="sweetness" class="filter-narrow">
-          <option value="">—</option>
-          {% for i in range(1, 6) %}
-          <option value="{{ i }}" {% if filters.sweetness|string == i|string %}selected{% endif %}>{{ i }}</option>
-          {% endfor %}
-        </select>
+        Dulzor
+        <div class="filter-range">
+          <select name="sweetness_min" class="filter-narrow">
+            <option value="">Min</option>
+            {% for i in range(1, 6) %}
+            <option value="{{ i }}" {% if filters.sweetness_min|string == i|string %}selected{% endif %}>{{ i }}</option>
+            {% endfor %}
+          </select>
+          <span class="range-dash">—</span>
+          <select name="sweetness_max" class="filter-narrow">
+            <option value="">Max</option>
+            {% for i in range(1, 6) %}
+            <option value="{{ i }}" {% if filters.sweetness_max|string == i|string %}selected{% endif %}>{{ i }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </label>
 
       <label>
-        Cuerpo min.
-        <select name="body" class="filter-narrow">
-          <option value="">—</option>
-          {% for i in range(1, 6) %}
-          <option value="{{ i }}" {% if filters.body|string == i|string %}selected{% endif %}>{{ i }}</option>
-          {% endfor %}
-        </select>
+        Cuerpo
+        <div class="filter-range">
+          <select name="body_min" class="filter-narrow">
+            <option value="">Min</option>
+            {% for i in range(1, 6) %}
+            <option value="{{ i }}" {% if filters.body_min|string == i|string %}selected{% endif %}>{{ i }}</option>
+            {% endfor %}
+          </select>
+          <span class="range-dash">—</span>
+          <select name="body_max" class="filter-narrow">
+            <option value="">Max</option>
+            {% for i in range(1, 6) %}
+            <option value="{{ i }}" {% if filters.body_max|string == i|string %}selected{% endif %}>{{ i }}</option>
+            {% endfor %}
+          </select>
+        </div>
       </label>
 
       <label class="checkbox-label">
+        <input type="hidden" name="available_only" value="false" />
         <input type="checkbox" name="available_only" value="true"
           {% if filters.available_only %}checked{% endif %} />
         Solo disponibles

@@ -100,6 +100,17 @@ main {
   min-width: 60px;
 }
 
+.filter-range {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.range-dash {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
 .checkbox-label {
   flex-direction: row !important;
   align-items: center;
@@ -320,4 +331,6 @@ footer {
   .filter-row { flex-direction: column; }
   .filter-row select { min-width: 100%; }
   .filter-row select.filter-narrow { min-width: 100%; }
+  .filter-range { width: 100%; }
+  .filter-range select { min-width: 48%; }
 }

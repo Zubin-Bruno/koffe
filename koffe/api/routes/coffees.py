@@ -39,10 +39,13 @@ def list_coffees(
     roaster_id: int | None = Query(None),
     origin: str | None = Query(None),
     process: str | None = Query(None),
-    acidity: int | None = Query(None, ge=1, le=5),
-    sweetness: int | None = Query(None, ge=1, le=5),
-    body: int | None = Query(None, ge=1, le=5),
-    available_only: bool = Query(True),
+    acidity_min: int | None = Query(None, ge=1, le=5),
+    acidity_max: int | None = Query(None, ge=1, le=5),
+    sweetness_min: int | None = Query(None, ge=1, le=5),
+    sweetness_max: int | None = Query(None, ge=1, le=5),
+    body_min: int | None = Query(None, ge=1, le=5),
+    body_max: int | None = Query(None, ge=1, le=5),
+    available_only: str | None = Query(None),
     min_price: int | None = Query(None, description="Minimum price in cents"),
     max_price: int | None = Query(None, description="Maximum price in cents"),
     limit: int = Query(100, le=500),
@@ -51,7 +54,7 @@ def list_coffees(
 ):
     q = db.query(Coffee)
 
-    if available_only:
+    if available_only != "false":
         q = q.filter(Coffee.is_available == True)
     if roaster_id:
         q = q.filter(Coffee.roaster_id == roaster_id)
@@ -59,12 +62,18 @@ def list_coffees(
         q = q.filter(Coffee.origin_country.ilike(f"%{origin}%"))
     if process:
         q = q.filter(Coffee.process.ilike(f"%{process}%"))
-    if acidity:
-        q = q.filter(Coffee.acidity >= acidity)
-    if sweetness:
-        q = q.filter(Coffee.sweetness >= sweetness)
-    if body:
-        q = q.filter(Coffee.body >= body)
+    if acidity_min:
+        q = q.filter(Coffee.acidity >= acidity_min)
+    if acidity_max:
+        q = q.filter(Coffee.acidity <= acidity_max)
+    if sweetness_min:
+        q = q.filter(Coffee.sweetness >= sweetness_min)
+    if sweetness_max:
+        q = q.filter(Coffee.sweetness <= sweetness_max)
+    if body_min:
+        q = q.filter(Coffee.body >= body_min)
+    if body_max:
+        q = q.filter(Coffee.body <= body_max)
     if min_price is not None:
         q = q.filter(Coffee.price_cents >= min_price)
     if max_price is not None:
@@ -97,14 +106,17 @@ async def index(
     origin: str | None = None,
     process: str | None = None,
     roaster_id: int | None = None,
-    acidity: int | None = None,
-    sweetness: int | None = None,
-    body: int | None = None,
-    available_only: bool = True,
+    acidity_min: int | None = None,
+    acidity_max: int | None = None,
+    sweetness_min: int | None = None,
+    sweetness_max: int | None = None,
+    body_min: int | None = None,
+    body_max: int | None = None,
+    available_only: str | None = None,
     db: Session = Depends(get_db),
 ):
     q = db.query(Coffee)
-    if available_only:
+    if available_only != "false":
         q = q.filter(Coffee.is_available == True)
     if origin:
         q = q.filter(Coffee.origin_country.ilike(f"%{origin}%"))
@@ -112,12 +124,18 @@ async def index(
         q = q.filter(Coffee.process.ilike(f"%{process}%"))
     if roaster_id:
         q = q.filter(Coffee.roaster_id == roaster_id)
-    if acidity:
-        q = q.filter(Coffee.acidity >= acidity)
-    if sweetness:
-        q = q.filter(Coffee.sweetness >= sweetness)
-    if body:
-        q = q.filter(Coffee.body >= body)
+    if acidity_min:
+        q = q.filter(Coffee.acidity >= acidity_min)
+    if acidity_max:
+        q = q.filter(Coffee.acidity <= acidity_max)
+    if sweetness_min:
+        q = q.filter(Coffee.sweetness >= sweetness_min)
+    if sweetness_max:
+        q = q.filter(Coffee.sweetness <= sweetness_max)
+    if body_min:
+        q = q.filter(Coffee.body >= body_min)
+    if body_max:
+        q = q.filter(Coffee.body <= body_max)
 
     coffees = q.order_by(Coffee.name).limit(200).all()
     roasters = db.query(Roaster).filter(Roaster.is_active == True).all()
@@ -139,10 +157,13 @@ async def index(
                 "origin": origin or "",
                 "process": process or "",
                 "roaster_id": roaster_id or "",
-                "acidity": acidity or "",
-                "sweetness": sweetness or "",
-                "body": body or "",
-                "available_only": available_only,
+                "acidity_min": acidity_min or "",
+                "acidity_max": acidity_max or "",
+                "sweetness_min": sweetness_min or "",
+                "sweetness_max": sweetness_max or "",
+                "body_min": body_min or "",
+                "body_max": body_max or "",
+                "available_only": available_only != "false",
             },
             "total": len(coffees),
         },
@@ -155,15 +176,18 @@ async def coffees_partial(
     origin: str | None = None,
     process: str | None = None,
     roaster_id: int | None = None,
-    acidity: int | None = None,
-    sweetness: int | None = None,
-    body: int | None = None,
-    available_only: bool = True,
+    acidity_min: int | None = None,
+    acidity_max: int | None = None,
+    sweetness_min: int | None = None,
+    sweetness_max: int | None = None,
+    body_min: int | None = None,
+    body_max: int | None = None,
+    available_only: str | None = None,
     db: Session = Depends(get_db),
 ):
     """HTMX partial — returns only the coffee card grid."""
     q = db.query(Coffee)
-    if available_only:
+    if available_only != "false":
         q = q.filter(Coffee.is_available == True)
     if origin:
         q = q.filter(Coffee.origin_country.ilike(f"%{origin}%"))
@@ -171,12 +195,18 @@ async def coffees_partial(
         q = q.filter(Coffee.process.ilike(f"%{process}%"))
     if roaster_id:
         q = q.filter(Coffee.roaster_id == roaster_id)
-    if acidity:
-        q = q.filter(Coffee.acidity >= acidity)
-    if sweetness:
-        q = q.filter(Coffee.sweetness >= sweetness)
-    if body:
-        q = q.filter(Coffee.body >= body)
+    if acidity_min:
+        q = q.filter(Coffee.acidity >= acidity_min)
+    if acidity_max:
+        q = q.filter(Coffee.acidity <= acidity_max)
+    if sweetness_min:
+        q = q.filter(Coffee.sweetness >= sweetness_min)
+    if sweetness_max:
+        q = q.filter(Coffee.sweetness <= sweetness_max)
+    if body_min:
+        q = q.filter(Coffee.body >= body_min)
+    if body_max:
+        q = q.filter(Coffee.body <= body_max)
 
     coffees = q.order_by(Coffee.name).limit(200).all()
 

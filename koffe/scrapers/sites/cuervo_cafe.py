@@ -226,15 +226,23 @@ class CuervoCafeScraper(BaseScraper):
 
     def _extract_origin(self, text: str) -> str | None:
         countries = [
-            "colombia", "ethiopia", "etiopía", "etiopia",
-            "kenya", "kenia", "guatemala", "peru", "perú",
-            "brazil", "brasil", "costa rica", "panama", "panamá",
-            "el salvador", "honduras", "nicaragua", "rwanda",
+            ("colombia", "Colombia"),
+            ("ethiopia", "Ethiopia"), ("etiopía", "Ethiopia"), ("etiopia", "Ethiopia"),
+            ("kenya", "Kenya"), ("kenia", "Kenya"),
+            ("guatemala", "Guatemala"),
+            ("peru", "Perú"), ("perú", "Perú"),
+            ("brazil", "Brazil"), ("brasil", "Brazil"),
+            ("costa rica", "Costa Rica"),
+            ("panama", "Panamá"), ("panamá", "Panamá"),
+            ("el salvador", "El Salvador"),
+            ("honduras", "Honduras"),
+            ("nicaragua", "Nicaragua"),
+            ("rwanda", "Rwanda"),
         ]
         lower = text.lower()
-        for country in countries:
-            if country in lower:
-                return country.title()
+        for keyword, canonical in countries:
+            if keyword in lower:
+                return canonical
         return None
 
     def _extract_altitude(self, text: str) -> int | None:
