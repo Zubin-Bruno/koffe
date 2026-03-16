@@ -29,6 +29,13 @@ SAMPLE_ROASTERS = [
         "country": "Argentina",
         "scraper_module": "koffe.scrapers.sites.sample_roaster",
     },
+    {
+        "name": "Cuervo Café",
+        "slug": "cuervo-cafe",
+        "website_url": "https://cuervocafe.com",
+        "country": "Argentina",
+        "scraper_module": "koffe.scrapers.sites.cuervo_cafe",
+    },
 ]
 
 SAMPLE_COFFEES = [
