@@ -61,6 +61,16 @@ SQLite file at `data/koffe.db` (gitignored). Tables are created automatically on
 
 Inspect the DB visually with [DB Browser for SQLite](https://sqlitebrowser.org/).
 
+## GitHub
+
+The `gh` CLI is not in the default shell PATH. Always invoke it with the full path:
+
+```bash
+/c/Program\ Files/GitHub\ CLI/gh
+```
+
+**After every set of changes, commit and push to GitHub automatically.** No need to ask — just commit with a clear message and push to `origin master`.
+
 ## Adding a new roaster
 
 1. Insert a row into `roasters` (via `seed_db.py` or directly in DB Browser)
