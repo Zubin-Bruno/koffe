@@ -96,6 +96,10 @@ main {
   min-width: 140px;
 }
 
+.filter-row select.filter-narrow {
+  min-width: 60px;
+}
+
 .checkbox-label {
   flex-direction: row !important;
   align-items: center;
@@ -315,4 +319,5 @@ footer {
   main { padding: 1rem; }
   .filter-row { flex-direction: column; }
   .filter-row select { min-width: 100%; }
+  .filter-row select.filter-narrow { min-width: 100%; }
 }

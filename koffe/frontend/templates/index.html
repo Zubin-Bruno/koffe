@@ -13,6 +13,16 @@
     <div class="filter-row">
 
       <label>
+        Tostador
+        <select name="roaster_id">
+          <option value="">Todos</option>
+          {% for r in roasters %}
+          <option value="{{ r.id }}" {% if filters.roaster_id|string == r.id|string %}selected{% endif %}>{{ r.name }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
         Origen
         <select name="origin">
           <option value="">Todos</option>
@@ -33,11 +43,31 @@
       </label>
 
       <label>
-        Tueste
-        <select name="roast_level">
-          <option value="">Todos</option>
-          {% for r in roast_levels %}
-          <option value="{{ r }}" {% if filters.roast_level == r %}selected{% endif %}>{{ r }}</option>
+        Acidez min.
+        <select name="acidity" class="filter-narrow">
+          <option value="">—</option>
+          {% for i in range(1, 6) %}
+          <option value="{{ i }}" {% if filters.acidity|string == i|string %}selected{% endif %}>{{ i }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        Dulzor min.
+        <select name="sweetness" class="filter-narrow">
+          <option value="">—</option>
+          {% for i in range(1, 6) %}
+          <option value="{{ i }}" {% if filters.sweetness|string == i|string %}selected{% endif %}>{{ i }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        Cuerpo min.
+        <select name="body" class="filter-narrow">
+          <option value="">—</option>
+          {% for i in range(1, 6) %}
+          <option value="{{ i }}" {% if filters.body|string == i|string %}selected{% endif %}>{{ i }}</option>
           {% endfor %}
         </select>
       </label>

@@ -12,6 +12,7 @@ def _coffee_to_dict(c: Coffee) -> dict:
     return {
         "id": c.id,
         "roaster_id": c.roaster_id,
+        "roaster_name": c.roaster.name if c.roaster else None,
         "name": c.name,
         "url": c.url,
         "price_cents": c.price_cents,
@@ -24,6 +25,9 @@ def _coffee_to_dict(c: Coffee) -> dict:
         "origin_country": c.origin_country,
         "process": c.process,
         "roast_level": c.roast_level,
+        "acidity": c.acidity,
+        "sweetness": c.sweetness,
+        "body": c.body,
         "attributes": c.attributes or {},
         "first_seen_at": c.first_seen_at.isoformat() if c.first_seen_at else None,
         "last_seen_at": c.last_seen_at.isoformat() if c.last_seen_at else None,
@@ -35,7 +39,9 @@ def list_coffees(
     roaster_id: int | None = Query(None),
     origin: str | None = Query(None),
     process: str | None = Query(None),
-    roast_level: str | None = Query(None),
+    acidity: int | None = Query(None, ge=1, le=5),
+    sweetness: int | None = Query(None, ge=1, le=5),
+    body: int | None = Query(None, ge=1, le=5),
     available_only: bool = Query(True),
     min_price: int | None = Query(None, description="Minimum price in cents"),
     max_price: int | None = Query(None, description="Maximum price in cents"),
@@ -53,8 +59,12 @@ def list_coffees(
         q = q.filter(Coffee.origin_country.ilike(f"%{origin}%"))
     if process:
         q = q.filter(Coffee.process.ilike(f"%{process}%"))
-    if roast_level:
-        q = q.filter(Coffee.roast_level.ilike(f"%{roast_level}%"))
+    if acidity:
+        q = q.filter(Coffee.acidity >= acidity)
+    if sweetness:
+        q = q.filter(Coffee.sweetness >= sweetness)
+    if body:
+        q = q.filter(Coffee.body >= body)
     if min_price is not None:
         q = q.filter(Coffee.price_cents >= min_price)
     if max_price is not None:
@@ -86,7 +96,10 @@ async def index(
     request: Request,
     origin: str | None = None,
     process: str | None = None,
-    roast_level: str | None = None,
+    roaster_id: int | None = None,
+    acidity: int | None = None,
+    sweetness: int | None = None,
+    body: int | None = None,
     available_only: bool = True,
     db: Session = Depends(get_db),
 ):
@@ -97,8 +110,14 @@ async def index(
         q = q.filter(Coffee.origin_country.ilike(f"%{origin}%"))
     if process:
         q = q.filter(Coffee.process.ilike(f"%{process}%"))
-    if roast_level:
-        q = q.filter(Coffee.roast_level.ilike(f"%{roast_level}%"))
+    if roaster_id:
+        q = q.filter(Coffee.roaster_id == roaster_id)
+    if acidity:
+        q = q.filter(Coffee.acidity >= acidity)
+    if sweetness:
+        q = q.filter(Coffee.sweetness >= sweetness)
+    if body:
+        q = q.filter(Coffee.body >= body)
 
     coffees = q.order_by(Coffee.name).limit(200).all()
     roasters = db.query(Roaster).filter(Roaster.is_active == True).all()
@@ -106,7 +125,6 @@ async def index(
     # Get distinct filter options from DB
     all_origins = [r[0] for r in db.query(Coffee.origin_country).distinct() if r[0]]
     all_processes = [r[0] for r in db.query(Coffee.process).distinct() if r[0]]
-    all_roasts = [r[0] for r in db.query(Coffee.roast_level).distinct() if r[0]]
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
@@ -117,11 +135,13 @@ async def index(
             "roasters": roasters,
             "origins": sorted(all_origins),
             "processes": sorted(all_processes),
-            "roast_levels": sorted(all_roasts),
             "filters": {
                 "origin": origin or "",
                 "process": process or "",
-                "roast_level": roast_level or "",
+                "roaster_id": roaster_id or "",
+                "acidity": acidity or "",
+                "sweetness": sweetness or "",
+                "body": body or "",
                 "available_only": available_only,
             },
             "total": len(coffees),
@@ -134,7 +154,10 @@ async def coffees_partial(
     request: Request,
     origin: str | None = None,
     process: str | None = None,
-    roast_level: str | None = None,
+    roaster_id: int | None = None,
+    acidity: int | None = None,
+    sweetness: int | None = None,
+    body: int | None = None,
     available_only: bool = True,
     db: Session = Depends(get_db),
 ):
@@ -146,8 +169,14 @@ async def coffees_partial(
         q = q.filter(Coffee.origin_country.ilike(f"%{origin}%"))
     if process:
         q = q.filter(Coffee.process.ilike(f"%{process}%"))
-    if roast_level:
-        q = q.filter(Coffee.roast_level.ilike(f"%{roast_level}%"))
+    if roaster_id:
+        q = q.filter(Coffee.roaster_id == roaster_id)
+    if acidity:
+        q = q.filter(Coffee.acidity >= acidity)
+    if sweetness:
+        q = q.filter(Coffee.sweetness >= sweetness)
+    if body:
+        q = q.filter(Coffee.body >= body)
 
     coffees = q.order_by(Coffee.name).limit(200).all()
 
