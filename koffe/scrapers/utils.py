@@ -37,6 +37,11 @@ def parse_price_cents(raw: str | None, currency: str = "ARS") -> int | None:
             cleaned = cleaned.replace(",", ".")
         else:
             cleaned = cleaned.replace(",", "")
+    elif "." in cleaned:
+        # Dot-only: check if it's a thousands separator (e.g. "21.200" in ARS)
+        # A dot followed by exactly 3 digits at the end is a thousands separator.
+        if re.match(r"^\d{1,3}(\.\d{3})+$", cleaned):
+            cleaned = cleaned.replace(".", "")
 
     try:
         return round(float(cleaned) * 100)

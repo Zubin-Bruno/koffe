@@ -29,6 +29,13 @@ SAMPLE_ROASTERS = [
         "country": "Argentina",
         "scraper_module": "koffe.scrapers.sites.puerto_blest",
     },
+    {
+        "name": "Fuego Tostadores",
+        "slug": "fuego-tostadores",
+        "website_url": "https://fuegotostadores.com",
+        "country": "Argentina",
+        "scraper_module": "koffe.scrapers.sites.fuego_tostadores",
+    },
 ]
 
 SAMPLE_COFFEES = []
