@@ -1,5 +1,3 @@
-@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700;800&display=swap');
-
 /* ── Reset & base ─────────────────────────────────────────── */
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -17,7 +15,7 @@
 }
 
 body {
-  font-family: 'Space Grotesk', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
   line-height: 1.5;
@@ -40,11 +38,9 @@ header {
 }
 
 .logo {
-  font-family: 'Space Grotesk', sans-serif;
   font-size: 1.1rem;
   font-weight: 800;
   letter-spacing: -0.03em;
-  text-transform: uppercase;
 }
 
 .tagline {
@@ -96,8 +92,7 @@ main {
   gap: 0.25rem;
   font-size: 0.8rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
 }
 
@@ -216,8 +211,7 @@ main {
 .tag {
   font-size: 0.7rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   padding: 0.2rem 0.5rem;
   border-radius: 99px;
   background: var(--tag-bg);
@@ -258,8 +252,7 @@ main {
 .intensity-label {
   font-size: 0.7rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
   width: 2.8rem;
   flex-shrink: 0;
@@ -447,8 +440,7 @@ body.modal-open { overflow: hidden; }
 .detail-label {
   font-size: 0.8rem;
   font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   color: var(--text-muted);
 }
 
@@ -586,7 +578,6 @@ body.modal-open { overflow: hidden; }
   letter-spacing: -0.04em;
   color: #ffffff;
   line-height: 0.95;
-  text-transform: uppercase;
 }
 
 /* Subtitle / tagline */
@@ -596,29 +587,25 @@ body.modal-open { overflow: hidden; }
   line-height: 1.5;
   font-weight: 400;
   letter-spacing: 0.02em;
-  text-transform: uppercase;
 }
 
-/* Grey CTA button — sharp, no radius */
+/* CTA link — no button shape, just underlined text in coffee brown */
 .btn-cta {
   display: inline-block;
   margin-top: 1.5rem;
-  padding: 0.85rem 2rem;
-  background: #d4d4d4;
-  color: #111111;
-  font-family: 'Space Grotesk', sans-serif;
-  font-size: 0.85rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  border-radius: 0;
-  transition: background 0.15s;
-  text-decoration: none;
+  background: none;
+  color: #8B5A2B;
+  font-size: 1rem;
+  font-weight: 500;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  text-decoration-thickness: 1px;
+  transition: color 0.15s;
 }
 
 .btn-cta:hover {
-  background: #ffffff;
-  text-decoration: none;
+  color: #6F4522;
+  text-decoration: underline;
 }
 
 /* GitHub link — top-right corner, floating above the hero */
