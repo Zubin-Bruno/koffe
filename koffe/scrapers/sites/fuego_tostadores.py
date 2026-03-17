@@ -277,6 +277,11 @@ class FuegoTostadoresScraper(BaseScraper):
             )
             if match:
                 value = match.group(1).strip().rstrip(".,;")
+                # Split at any field label that bled in due to missing spaces in HTML text
+                value = re.split(
+                    r'(?:beneficio|proceso|varietal|variedad|altura|finca|origen|region|notas?|tueste|tostado|acidez|dulzura|cuerpo)\s*:',
+                    value, flags=re.IGNORECASE, maxsplit=1
+                )[0].strip().rstrip(".,;")
                 if value and len(value) < 60:
                     return value
         return None
