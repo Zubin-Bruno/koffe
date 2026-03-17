@@ -127,59 +127,37 @@ class FlatNWhiteScraper(BaseScraper):
         if tasting_notes:
             attributes["tasting_notes"] = tasting_notes
 
-        # WooCommerce variations
+        # One entry per product — collapse all grind/size variants
+        slug = url.rstrip("/").split("/")[-1]
         variations = self._parse_variations(tree)
 
-        coffees = []
         if variations:
-            for var in variations:
-                var_name = name
-                if var.get("label"):
-                    var_name = f"{name} — {var['label']}"
-                coffees.append(
-                    CoffeeData(
-                        external_id=str(var["id"]),
-                        name=var_name,
-                        url=url,
-                        price_cents=var.get("price_cents"),
-                        currency="ARS",
-                        weight_grams=var.get("weight_grams"),
-                        is_available=var.get("is_available", is_available_default),
-                        image_url=image_url,
-                        description=description,
-                        origin_country=origin_country,
-                        process=process,
-                        roast_level=roast_level,
-                        variety=variety,
-                        altitude_masl=altitude_masl,
-                        attributes=attributes,
-                    )
-                )
+            prices = [v["price_cents"] for v in variations if v.get("price_cents")]
+            price_cents = min(prices) if prices else None
+            is_available = any(v.get("is_available", False) for v in variations)
         else:
-            # No variations found — create single entry
-            slug = url.rstrip("/").split("/")[-1]
             price_node = tree.css_first(".woocommerce-Price-amount")
             price_cents = parse_price_cents(price_node.text() if price_node else None)
-            coffees.append(
-                CoffeeData(
-                    external_id=slug,
-                    name=name,
-                    url=url,
-                    price_cents=price_cents,
-                    currency="ARS",
-                    is_available=is_available_default,
-                    image_url=image_url,
-                    description=description,
-                    origin_country=origin_country,
-                    process=process,
-                    roast_level=roast_level,
-                    variety=variety,
-                    altitude_masl=altitude_masl,
-                    attributes=attributes,
-                )
-            )
+            is_available = is_available_default
 
-        return coffees
+        return [
+            CoffeeData(
+                external_id=slug,
+                name=name,
+                url=url,
+                price_cents=price_cents,
+                currency="ARS",
+                is_available=is_available,
+                image_url=image_url,
+                description=description,
+                origin_country=origin_country,
+                process=process,
+                roast_level=roast_level,
+                variety=variety,
+                altitude_masl=altitude_masl,
+                attributes=attributes,
+            )
+        ]
 
     def _parse_availability(self, tree: HTMLParser) -> bool:
         """Check JSON-LD for InStock status; default True."""
