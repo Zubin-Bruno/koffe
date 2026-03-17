@@ -48,6 +48,18 @@ header {
   font-size: 0.875rem;
 }
 
+.header-nav {
+  margin-left: auto;
+}
+
+.header-nav a {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--accent);
+}
+
+.header-nav a:hover { text-decoration: underline; }
+
 /* ── Main ─────────────────────────────────────────────────── */
 main {
   flex: 1;
@@ -506,4 +518,160 @@ body.modal-open { overflow: hidden; }
   .detail-header { flex-direction: column; align-items: center; text-align: center; }
   .detail-image { width: 120px; }
   .modal-content { padding: 1.25rem; }
+}
+
+/* ── Landing page ─────────────────────────────────────────── */
+
+/* Remove the default flex-column body layout on the landing page */
+.landing-body {
+  display: block;
+  background: #111;
+}
+
+/* Hero: full viewport height, stacking context for overlay + content */
+.hero {
+  position: relative;
+  height: 100vh;
+  min-height: 500px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Background photo fills the whole hero area */
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+}
+
+/* Dark gradient so the white text is always legible */
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.35) 0%,
+    rgba(0, 0, 0, 0.55) 60%,
+    rgba(0, 0, 0, 0.75) 100%
+  );
+}
+
+/* Centered text block — sits on top of the overlay (z-index) */
+.hero-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 1.25rem;
+  padding: 2rem;
+}
+
+/* Large editorial title */
+.hero-title {
+  font-size: clamp(3.5rem, 12vw, 8rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  color: #ffffff;
+  line-height: 1;
+}
+
+/* Subtitle / tagline */
+.hero-tagline {
+  font-size: clamp(1rem, 2.5vw, 1.4rem);
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.5;
+  font-weight: 400;
+}
+
+/* Primary CTA button */
+.btn-cta {
+  display: inline-block;
+  margin-top: 0.5rem;
+  padding: 0.85rem 2rem;
+  background: var(--accent);
+  color: #ffffff;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: var(--radius);
+  transition: background 0.15s, transform 0.1s;
+  text-decoration: none;
+}
+
+.btn-cta:hover {
+  background: var(--accent-hover);
+  transform: translateY(-1px);
+  text-decoration: none;
+}
+
+/* GitHub link — top-right corner, floating above the hero */
+.hero-github {
+  position: absolute;
+  top: 1.25rem;
+  right: 1.5rem;
+  z-index: 2;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+
+.hero-github:hover {
+  color: #ffffff;
+  text-decoration: none;
+}
+
+/* "Sobre Koffe" section below the hero */
+.about {
+  background: var(--bg);
+  padding: 5rem 2rem;
+}
+
+.about-inner {
+  max-width: 680px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.about-heading {
+  font-size: 1.75rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.about-text {
+  font-size: 1rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+}
+
+.about-github {
+  display: inline-block;
+  margin-top: 0.5rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--accent);
+  text-decoration: none;
+}
+
+.about-github:hover {
+  text-decoration: underline;
+}
+
+/* Landing responsive tweaks */
+@media (max-width: 600px) {
+  .hero-content { gap: 1rem; }
+  .btn-cta { padding: 0.75rem 1.5rem; font-size: 0.95rem; }
+  .about { padding: 3rem 1.25rem; }
 }

@@ -139,6 +139,12 @@ async def coffee_detail(coffee_id: int, request: Request, db: Session = Depends(
 
 
 @router.get("/", response_class=HTMLResponse, include_in_schema=False)
+async def landing(request: Request):
+    templates = request.app.state.templates
+    return templates.TemplateResponse("landing.html", {"request": request})
+
+
+@router.get("/explorar", response_class=HTMLResponse, include_in_schema=False)
 async def index(
     request: Request,
     origin: str | None = None,

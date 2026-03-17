@@ -4,13 +4,16 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>{% block title %}Koffe{% endblock %}</title>
-  <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+  <script src="/static/htmx.min.js"></script>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <header>
     <a href="/" class="logo">☕ koffe</a>
     <p class="tagline">Cafés de especialidad — Argentina</p>
+    <nav class="header-nav">
+      <a href="/explorar">Explorar →</a>
+    </nav>
   </header>
   <main>
     {% block content %}{% endblock %}
@@ -26,6 +29,9 @@
     }
     document.addEventListener('keydown', function(e) {
       if (e.key === 'Escape') closeModal();
+    });
+    document.body.addEventListener('htmx:responseError', function(e) {
+      console.error('HTMX error:', e.detail.xhr.status, e.detail.xhr.responseText);
     });
     document.body.addEventListener('htmx:afterSwap', function(e) {
       if (e.detail.target.id === 'modal-container' && e.detail.target.innerHTML.trim()) {
