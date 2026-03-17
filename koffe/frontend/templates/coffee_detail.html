@@ -39,13 +39,6 @@
       </div>
     </div>
 
-    {# ── Description ── #}
-    {% if coffee.description %}
-    <div class="detail-section">
-      <p class="detail-description">{{ coffee.description }}</p>
-    </div>
-    {% endif %}
-
     {# ── Intensity dots ── #}
     {% if coffee.acidity or coffee.sweetness or coffee.body %}
     <div class="detail-section detail-intensity">
@@ -69,7 +62,7 @@
     {# ── Price, Weight, Availability ── #}
     <div class="detail-section detail-price-row">
       <span class="detail-price">
-        {{ coffee.price_display + ' ' + coffee.currency if coffee.price_display else '—' }}
+        {{ coffee.price_display + ' ' + (coffee.currency or 'ARS') if coffee.price_display else '—' }}
       </span>
       <span class="detail-weight">{{ (coffee.weight_grams | string + 'g') if coffee.weight_grams else '' }}</span>
     </div>
