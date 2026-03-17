@@ -14,6 +14,24 @@
   --shadow: 0 1px 3px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.06);
 }
 
+/* ── Dark mode ─────────────────────────────────────────────── */
+[data-theme="dark"] {
+  --bg: #1a1410;
+  --surface: #241e1a;
+  --border: #3d332c;
+  --text: #f0ebe5;
+  --text-muted: #a89080;
+  --accent: #e05c50;
+  --accent-hover: #c44e43;
+  --tag-bg: #332b26;
+  --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
+}
+
+[data-theme="dark"] .tag--origin   { background: #1e3a5f; color: #93c5fd; }
+[data-theme="dark"] .tag--process  { background: #1a3a28; color: #86efac; }
+[data-theme="dark"] .tag--roast    { background: #3a2e1a; color: #fcd34d; }
+[data-theme="dark"] .tag--sold-out { background: #3a1a1a; color: #fca5a5; }
+
 body {
   font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
   background: var(--bg);
@@ -27,13 +45,31 @@ body {
 a { color: inherit; text-decoration: none; }
 a:hover { text-decoration: underline; }
 
+/* ── Theme toggle button ───────────────────────────────────── */
+.theme-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.25rem;
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
+  transition: opacity 0.15s, transform 0.15s;
+  line-height: 1;
+}
+
+.theme-toggle:hover {
+  opacity: 1;
+  transform: scale(1.1);
+}
+
 /* ── Header ───────────────────────────────────────────────── */
 header {
   background: var(--surface);
   border-bottom: 1px solid var(--border);
   padding: 1rem 2rem;
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: 1rem;
 }
 
@@ -608,12 +644,19 @@ body.modal-open { overflow: hidden; }
   text-decoration: underline;
 }
 
-/* GitHub link — top-right corner, floating above the hero */
-.hero-github {
+/* Top-right cluster: GitHub link + theme toggle */
+.hero-actions {
   position: absolute;
   top: 1.25rem;
   right: 1.5rem;
   z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+/* GitHub link inside the hero */
+.hero-github {
   color: rgba(255, 255, 255, 0.75);
   font-size: 0.85rem;
   font-weight: 600;
@@ -625,6 +668,19 @@ body.modal-open { overflow: hidden; }
 .hero-github:hover {
   color: #ffffff;
   text-decoration: none;
+}
+
+/* Theme toggle inside the dark hero needs a slight backdrop so both beans are visible */
+.hero-actions .theme-toggle {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 50%;
+  padding: 0.4rem;
+  opacity: 0.9;
+}
+
+.hero-actions .theme-toggle:hover {
+  background: rgba(255, 255, 255, 0.25);
+  opacity: 1;
 }
 
 /* "Sobre Koffe" section below the hero */

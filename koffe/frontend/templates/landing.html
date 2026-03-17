@@ -4,6 +4,13 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Google Kofe — Cafés de especialidad de Argentina</title>
+  <!-- Apply saved theme before render to avoid a flash of wrong colors -->
+  <script>
+    (function(){
+      var t = localStorage.getItem('theme') || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', t);
+    })();
+  </script>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body class="landing-body">
@@ -20,10 +27,24 @@
     <!-- Dark gradient overlay so the white text stays readable -->
     <div class="hero-overlay"></div>
 
-    <!-- Top-right: GitHub link -->
-    <a class="hero-github" href="https://github.com/brunoamaral/koffe" target="_blank" rel="noopener">
-      GitHub ↗
-    </a>
+    <!-- Top-right: theme toggle + GitHub link -->
+    <div class="hero-actions">
+      <button class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema">
+        <!-- Dark roasted bean (shown when in dark mode) -->
+        <svg id="bean-dark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <ellipse cx="12" cy="12" rx="6" ry="9" fill="#3a1a08"/>
+          <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#1a0a03" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        </svg>
+        <!-- Light roasted bean (shown when in light mode) -->
+        <svg id="bean-light" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+          <ellipse cx="12" cy="12" rx="6" ry="9" fill="#c9a060"/>
+          <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#8a6030" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        </svg>
+      </button>
+      <a class="hero-github" href="https://github.com/brunoamaral/koffe" target="_blank" rel="noopener">
+        GitHub ↗
+      </a>
+    </div>
 
     <!-- Upper-left content -->
     <div class="hero-content">
@@ -52,5 +73,26 @@
     </div>
   </section>
 
+  <script>
+    (function() {
+      var btn = document.getElementById('theme-toggle');
+      var beanDark  = document.getElementById('bean-dark');
+      var beanLight = document.getElementById('bean-light');
+
+      function applyTheme(theme) {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('theme', theme);
+        beanDark.style.display  = theme === 'dark'  ? 'block' : 'none';
+        beanLight.style.display = theme === 'light' ? 'block' : 'none';
+      }
+
+      applyTheme(document.documentElement.getAttribute('data-theme') || 'light');
+
+      btn.addEventListener('click', function() {
+        var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+        applyTheme(next);
+      });
+    })();
+  </script>
 </body>
 </html>
