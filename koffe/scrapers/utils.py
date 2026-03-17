@@ -94,7 +94,7 @@ def normalize_process(raw: str | None) -> str | None:
         return "Honey"
     if "anaerobic" in lower or "anaeróbico" in lower:
         return "Anaerobic"
-    return raw.strip().title()
+    return None
 
 
 def normalize_intensity(raw: str | None) -> int | None:
@@ -161,4 +161,4 @@ def normalize_roast(raw: str | None) -> str | None:
         return "Medium"
     if any(w in lower for w in ["dark", "oscuro", "oscura"]):
         return "Dark"
-    return raw.strip().title()
+    return None
