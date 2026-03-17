@@ -27,36 +27,10 @@
         {% if coffee.process %}
         <span class="tag tag--process">{{ coffee.process }}</span>
         {% endif %}
-        {% if coffee.roast_level %}
-        <span class="tag tag--roast">{{ coffee.roast_level }}</span>
-        {% endif %}
         {% if not coffee.is_available %}
         <span class="tag tag--sold-out">Agotado</span>
         {% endif %}
       </div>
-
-      {% if coffee.description %}
-      <p class="card-description">{{ coffee.description[:200] }}{% if coffee.description|length > 200 %}…{% endif %}</p>
-      {% endif %}
-
-      {% if coffee.attributes.tasting_notes %}
-      <p class="card-notes">{{ coffee.attributes.tasting_notes | join(" · ") }}</p>
-      {% endif %}
-
-      {% if coffee.acidity or coffee.sweetness or coffee.body %}
-      <div class="card-intensity">
-        {% for label, value in [("Acidez", coffee.acidity), ("Dulzor", coffee.sweetness), ("Cuerpo", coffee.body)] %}
-        {% if value %}
-        <div class="intensity-row">
-          <span class="intensity-label">{{ label }}</span>
-          <span class="intensity-dots">
-            {% for i in range(1, 6) %}<span class="dot {% if i <= value %}dot--on{% endif %}"></span>{% endfor %}
-          </span>
-        </div>
-        {% endif %}
-        {% endfor %}
-      </div>
-      {% endif %}
 
       <div class="card-footer">
         <span class="card-price">
