@@ -2,23 +2,23 @@
 
 <div class="card-grid">
 {% for coffee in coffees %}
-  <article class="card {% if not coffee.is_available %}card--unavailable{% endif %}">
+  <article class="card {% if not coffee.is_available %}card--unavailable{% endif %}"
+           hx-get="/coffees/{{ coffee.id }}/detail"
+           hx-target="#modal-container"
+           hx-swap="innerHTML"
+           style="cursor:pointer;">
 
     <div class="card-image">
-      <a href="{{ coffee.url }}" target="_blank" rel="noopener">
-        <img
-          src="{{ coffee.image_url or '/static/images/coffee-placeholder.svg' }}"
-          alt="{{ coffee.name }}"
-          loading="lazy"
-          onerror="this.src='/static/images/coffee-placeholder.svg'"
-        />
-      </a>
+      <img
+        src="{{ coffee.image_url or '/static/images/coffee-placeholder.svg' }}"
+        alt="{{ coffee.name }}"
+        loading="lazy"
+        onerror="this.src='/static/images/coffee-placeholder.svg'"
+      />
     </div>
 
     <div class="card-body">
-      <h2 class="card-name">
-        <a href="{{ coffee.url }}" target="_blank" rel="noopener">{{ coffee.name }}</a>
-      </h2>
+      <h2 class="card-name">{{ coffee.name }}</h2>
 
       <div class="card-tags">
         {% if coffee.origin_country %}
@@ -43,9 +43,6 @@
         {% if coffee.weight_grams %}
         <span class="card-weight">{{ coffee.weight_grams }}g</span>
         {% endif %}
-        <a class="card-buy-btn" href="{{ coffee.url }}" target="_blank" rel="noopener">
-          Comprar →
-        </a>
       </div>
     </div>
   </article>

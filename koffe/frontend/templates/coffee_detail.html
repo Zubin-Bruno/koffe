@@ -1,0 +1,88 @@
+<div class="modal-backdrop" onclick="closeModal()">
+  <div class="modal-content" onclick="event.stopPropagation()">
+    <button class="modal-close" onclick="closeModal()" aria-label="Cerrar">&times;</button>
+
+    {# ── Header: image + name ── #}
+    <div class="detail-header">
+      <div class="detail-image">
+        <img
+          src="{{ coffee.image_url or '/static/images/coffee-placeholder.svg' }}"
+          alt="{{ coffee.name }}"
+          onerror="this.src='/static/images/coffee-placeholder.svg'"
+        />
+      </div>
+      <div class="detail-info">
+        <h2 class="detail-name">{{ coffee.name }}</h2>
+        <p class="detail-roaster">{{ coffee.roaster_name or '—' }}</p>
+      </div>
+    </div>
+
+    {# ── Tags ── #}
+    <div class="detail-tags">
+      <span class="tag tag--origin">{{ coffee.origin_country or '—' }}</span>
+      <span class="tag tag--process">{{ coffee.process or '—' }}</span>
+      <span class="tag tag--roast">{{ coffee.roast_level or '—' }}</span>
+      {% if not coffee.is_available %}
+      <span class="tag tag--sold-out">Agotado</span>
+      {% endif %}
+    </div>
+
+    {# ── Variety & Altitude ── #}
+    <div class="detail-section">
+      <div class="detail-row">
+        <span class="detail-label">Variedad</span>
+        <span>{{ coffee.variety or '—' }}</span>
+      </div>
+      <div class="detail-row">
+        <span class="detail-label">Altitud</span>
+        <span>{{ (coffee.altitude_masl | string + ' msnm') if coffee.altitude_masl else '—' }}</span>
+      </div>
+    </div>
+
+    {# ── Description ── #}
+    {% if coffee.description %}
+    <div class="detail-section">
+      <p class="detail-description">{{ coffee.description }}</p>
+    </div>
+    {% endif %}
+
+    {# ── Intensity dots ── #}
+    {% if coffee.acidity or coffee.sweetness or coffee.body %}
+    <div class="detail-section detail-intensity">
+      {% for label, value in [('Acidez', coffee.acidity), ('Dulzor', coffee.sweetness), ('Cuerpo', coffee.body)] %}
+      <div class="intensity-row">
+        <span class="intensity-label">{{ label }}</span>
+        <span class="intensity-dots">
+          {% if value %}
+            {% for i in range(1, 6) %}
+            <span class="dot {{ 'dot--on' if i <= value else '' }}"></span>
+            {% endfor %}
+          {% else %}
+            <span class="detail-muted">—</span>
+          {% endif %}
+        </span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {# ── Price, Weight, Availability ── #}
+    <div class="detail-section detail-price-row">
+      <span class="detail-price">
+        {{ coffee.price_display + ' ' + coffee.currency if coffee.price_display else '—' }}
+      </span>
+      <span class="detail-weight">{{ (coffee.weight_grams | string + 'g') if coffee.weight_grams else '' }}</span>
+    </div>
+
+    {# ── Buy button ── #}
+    <a class="detail-buy-btn" href="{{ coffee.url }}" target="_blank" rel="noopener">
+      Comprar &rarr;
+    </a>
+
+    {# ── Dates ── #}
+    <div class="detail-dates">
+      <span>Visto por primera vez: {{ coffee.first_seen_at[:10] if coffee.first_seen_at else '—' }}</span>
+      <span>Última vez visto: {{ coffee.last_seen_at[:10] if coffee.last_seen_at else '—' }}</span>
+    </div>
+  </div>
+</div>

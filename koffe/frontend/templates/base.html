@@ -18,5 +18,20 @@
   <footer>
     <p>Koffe — datos actualizados diariamente desde sitios de tostadores</p>
   </footer>
+  <div id="modal-container"></div>
+  <script>
+    function closeModal() {
+      document.getElementById('modal-container').innerHTML = '';
+      document.body.classList.remove('modal-open');
+    }
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeModal();
+    });
+    document.body.addEventListener('htmx:afterSwap', function(e) {
+      if (e.detail.target.id === 'modal-container' && e.detail.target.innerHTML.trim()) {
+        document.body.classList.add('modal-open');
+      }
+    });
+  </script>
 </body>
 </html>

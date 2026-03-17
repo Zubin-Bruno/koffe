@@ -77,3 +77,8 @@ The `gh` CLI is not in the default shell PATH. Always invoke it with the full pa
 2. Create `koffe/scrapers/sites/<slug>.py` — copy from `sample_roaster.py`
 3. Set `roaster_slug` to match the DB slug and implement `scrape()`
 4. Run `python scripts/scrape_now.py` to verify
+
+## Explaining the user
+The user is a begginer in the world of coding, he only knows the basics of python, BS4, and SQL.
+You should explain carefully, with lots of detail and in simple and understandable language all the things that you do and why are you doing them
+Always do explain after and before performing any kind of action, from planning, to writting code, to reviewing code, executing commands, etc.

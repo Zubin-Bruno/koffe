@@ -38,6 +38,8 @@ def _coffee_to_dict(c: Coffee) -> dict:
         "acidity": c.acidity,
         "sweetness": c.sweetness,
         "body": c.body,
+        "variety": c.variety,
+        "altitude_masl": c.altitude_masl,
         "attributes": c.attributes or {},
         "first_seen_at": c.first_seen_at.isoformat() if c.first_seen_at else None,
         "last_seen_at": c.last_seen_at.isoformat() if c.last_seen_at else None,
@@ -118,6 +120,22 @@ def get_coffee(coffee_id: int, db: Session = Depends(get_db)):
     if not coffee:
         raise HTTPException(status_code=404, detail="Coffee not found")
     return _coffee_to_dict(coffee)
+
+
+@router.get("/coffees/{coffee_id}/detail", response_class=HTMLResponse, include_in_schema=False)
+async def coffee_detail(coffee_id: int, request: Request, db: Session = Depends(get_db)):
+    """HTMX partial — returns the coffee detail modal."""
+    from fastapi import HTTPException
+
+    coffee = db.query(Coffee).filter(Coffee.id == coffee_id).first()
+    if not coffee:
+        raise HTTPException(status_code=404, detail="Coffee not found")
+
+    templates = request.app.state.templates
+    return templates.TemplateResponse(
+        "coffee_detail.html",
+        {"request": request, "coffee": _coffee_to_dict(coffee)},
+    )
 
 
 @router.get("/", response_class=HTMLResponse, include_in_schema=False)

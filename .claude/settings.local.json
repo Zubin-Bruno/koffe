@@ -10,7 +10,10 @@
       "Bash(cd:*)",
       "Bash(cat:*)",
       "Bash(python:*)",
-      "Bash(ls:*)"
+      "Bash(ls:*)",
+      "WebFetch(domain:fuegotostadores.com)",
+      "Bash(git add:*)",
+      "Bash(git push:*)"
     ]
   }
 }
