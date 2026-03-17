@@ -3,8 +3,10 @@ Scraper for Flat N' White — https://flatnwhite.com
 Argentine specialty coffee roaster. WooCommerce + XStore theme.
 """
 
+import base64
 import json
 import re
+import urllib.parse
 
 from loguru import logger
 from selectolax.parser import HTMLParser
@@ -90,17 +92,38 @@ class FlatNWhiteScraper(BaseScraper):
         if not name:
             return []
 
-        # Image
+        # Image — XStore theme lazy-loads via a data:image/svg+xml placeholder.
+        # The real URL is embedded inside the SVG as a URL-encoded data-u attribute.
         image_url = None
         img_node = tree.css_first(
             ".woocommerce-product-gallery__image img, .wp-post-image"
         )
         if img_node:
-            image_url = (
-                img_node.attributes.get("src")
-                or img_node.attributes.get("data-src")
-                or img_node.attributes.get("data-lazy-src")
-            )
+            raw_src = img_node.attributes.get("src", "")
+            if raw_src and not raw_src.startswith("data:"):
+                image_url = raw_src
+            if not image_url and raw_src.startswith("data:image/svg+xml;base64,"):
+                # Decode the SVG and extract the real URL from its data-u attribute
+                try:
+                    svg_text = base64.b64decode(
+                        raw_src.split(",", 1)[1]
+                    ).decode("utf-8", errors="ignore")
+                    match = re.search(r'data-u="([^"]+)"', svg_text)
+                    if match:
+                        image_url = urllib.parse.unquote(match.group(1))
+                except Exception:
+                    pass
+            if not image_url:
+                image_url = (
+                    img_node.attributes.get("data-src")
+                    or img_node.attributes.get("data-lazy-src")
+                    or img_node.attributes.get("data-large_image")
+                )
+            # Last resort: WooCommerce stores full-size URL in the parent <a>
+            if not image_url:
+                parent = img_node.parent
+                if parent and parent.tag == "a":
+                    image_url = parent.attributes.get("href") or None
 
         # Short description
         desc_node = tree.css_first(
