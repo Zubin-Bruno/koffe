@@ -152,8 +152,8 @@ class FuegoTostadoresScraper(BaseScraper):
         desc_node = tree.css_first(".product-description, .js-product-description")
         description = clean_text(desc_node.text()) if desc_node else None
 
-        # Extract structured fields from page text
-        page_text = tree.body.text() if tree.body else ""
+        # Use only the description element for field extraction to avoid JSON-LD/script noise
+        page_text = desc_node.text() if desc_node else (tree.body.text() if tree.body else "")
 
         origin_country = self._extract_origin(name, page_text)
 
