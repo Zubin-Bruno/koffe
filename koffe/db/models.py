@@ -4,6 +4,7 @@ from typing import Any
 from sqlalchemy import (
     Boolean,
     DateTime,
+    Float,
     ForeignKey,
     Integer,
     String,
@@ -56,9 +57,9 @@ class Coffee(Base):
     origin_country: Mapped[str | None] = mapped_column(String, index=True)
     process: Mapped[str | None] = mapped_column(String, index=True)
     roast_level: Mapped[str | None] = mapped_column(String, index=True)
-    acidity: Mapped[int | None] = mapped_column(Integer, index=True)   # 1–5
-    sweetness: Mapped[int | None] = mapped_column(Integer, index=True) # 1–5
-    body: Mapped[int | None] = mapped_column(Integer, index=True)      # 1–5
+    acidity: Mapped[float | None] = mapped_column(Float, index=True)   # 1–5
+    sweetness: Mapped[float | None] = mapped_column(Float, index=True) # 1–5
+    body: Mapped[float | None] = mapped_column(Float, index=True)      # 1–5
     variety: Mapped[str | None] = mapped_column(String)
     altitude_masl: Mapped[int | None] = mapped_column(Integer)
     attributes: Mapped[dict[str, Any] | None] = mapped_column(JSON)
