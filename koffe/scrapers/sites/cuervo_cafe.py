@@ -140,8 +140,9 @@ class CuervoCafeScraper(BaseScraper):
         desc_node = tree.css_first(".woocommerce-product-details__short-description") or tree.css_first(".product-description")
         description = clean_text(desc_node.text()) if desc_node else None
 
-        # Extract structured fields from the full page text (meta tables, custom fields)
-        page_text = tree.body.text() if tree.body else ""
+        # Use separator='\n' so selectolax inserts newlines between block elements.
+        # The _extract_field regex stops at \n, preventing field bleeding.
+        page_text = desc_node.text(separator="\n") if desc_node else (tree.body.text(separator="\n") if tree.body else "")
 
         origin_country = self._extract_origin(page_text)
         process = normalize_process(self._extract_field(page_text, ["proceso", "process", "beneficio"]))
