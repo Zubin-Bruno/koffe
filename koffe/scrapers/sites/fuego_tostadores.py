@@ -21,7 +21,6 @@ BASE_URL = "https://fuegotostadores.com"
 
 # Each category page implies a fixed weight for all products in it.
 CATEGORY_PAGES = [
-    {"url": f"{BASE_URL}/cafe-de-especialidad/cafe-200-gr/", "weight": 200},
     {"url": f"{BASE_URL}/cafe-de-especialidad/cuartos-de-cafe/", "weight": 250},
 ]
 
