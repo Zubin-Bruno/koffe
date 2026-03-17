@@ -36,6 +36,13 @@ SAMPLE_ROASTERS = [
         "country": "Argentina",
         "scraper_module": "koffe.scrapers.sites.fuego_tostadores",
     },
+    {
+        "name": "Flat N' White",
+        "slug": "flat-n-white",
+        "website_url": "https://flatnwhite.com",
+        "country": "Argentina",
+        "scraper_module": "koffe.scrapers.sites.flat_n_white",
+    },
 ]
 
 SAMPLE_COFFEES = []
