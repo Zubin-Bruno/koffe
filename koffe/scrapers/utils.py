@@ -86,7 +86,7 @@ def normalize_process(raw: str | None) -> str | None:
         return None
 
     lower = raw.lower()
-    if any(w in lower for w in ["natural", "seco", "dry"]):
+    if any(w in lower for w in ["natural", "natur", "seco", "dry"]):
         return "Natural"
     if any(w in lower for w in ["washed", "lavado", "húmedo", "wet"]):
         return "Washed"
