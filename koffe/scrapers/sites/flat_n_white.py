@@ -156,7 +156,7 @@ class FlatNWhiteScraper(BaseScraper):
             self._extract_field(page_text, ["tueste", "tostado", "roast"])
         )
         altitude_masl = self._extract_altitude(page_text)
-        tasting_notes = self._extract_tasting_notes(page_text)
+        tasting_notes = self._extract_tasting_notes(tree, page_text)
         # Brew methods are mentioned in prose inside the full description tab,
         # not in a labeled field. Pass the full tab text to normalize_brew_methods().
         desc_tab = tree.css_first("#tab-description, .woocommerce-Tabs-panel--description")
@@ -364,9 +364,24 @@ class FlatNWhiteScraper(BaseScraper):
             return int(match.group(1))
         return None
 
-    def _extract_tasting_notes(self, text: str) -> list[str] | None:
+    def _extract_tasting_notes(self, tree: HTMLParser, text: str) -> list[str] | None:
+        # DOM-first: find an elementor-shortcode div whose parent/grandparent
+        # contains "notas de cata" — this is the dedicated cup-notes element on
+        # Flat N' White product pages.
+        for node in tree.css("div.elementor-shortcode"):
+            for ancestor in (node.parent, node.parent.parent if node.parent else None):
+                if ancestor is None:
+                    continue
+                ancestor_text = ancestor.text(deep=True)
+                if re.search(r"notas?\s+de\s+cata", ancestor_text, re.IGNORECASE):
+                    raw = node.text().strip()
+                    if raw:
+                        notes = [n.strip() for n in re.split(r"[,/y&+]", raw) if n.strip()]
+                        return notes[:6] if notes else None
+
+        # Regex fallback — "perfil" removed to avoid matching "perfil en taza"
         match = re.search(
-            r"(?:notas?|notes?|perfil)[:\s]+(.+?)(?:tostado|cosecha|recolecci[oó]n|secado|presentaci[oó]n|beneficio|proceso|varietal|varietales|variedad|altura|finca|origen|regi[oó]n|tueste|acidez|dulzura|cuerpo|puntaje|\n|\r|$)",
+            r"(?:notas?\s+de\s+cata|notas?|notes?)[:\s]+(.+?)(?:tostado|cosecha|recolecci[oó]n|secado|presentaci[oó]n|beneficio|proceso|varietal|varietales|variedad|altura|finca|origen|regi[oó]n|tueste|acidez|dulzura|cuerpo|puntaje|\n|\r|$)",
             text,
             re.IGNORECASE,
         )
