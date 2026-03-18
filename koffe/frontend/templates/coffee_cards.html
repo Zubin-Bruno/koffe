@@ -27,6 +27,9 @@
         {% if coffee.process %}
         <span class="tag tag--process">{{ coffee.process }}</span>
         {% endif %}
+        {% for method in coffee.brew_methods %}
+        <span class="tag tag--brew">{{ method }}</span>
+        {% endfor %}
         {% if not coffee.is_available %}
         <span class="tag tag--sold-out">Agotado</span>
         {% endif %}
