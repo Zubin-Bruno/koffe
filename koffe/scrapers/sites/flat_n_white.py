@@ -139,13 +139,18 @@ class FlatNWhiteScraper(BaseScraper):
         # Metadata from page body text
         page_text = tree.body.text() if tree.body else ""
         origin_country = self._extract_origin(name, page_text)
+        process = None
         _process_raw = self._extract_field(
             page_text,
-            ["beneficio", "beneficiado", "proceso", "process", "fermentacion", "fermentación", "método"]
+            ["beneficio", "beneficiado", "proceso", "process", "fermentacion", "fermentación"]
+            # "método" removed — too broad, matches "método de pago" / "método de envío" on WooCommerce pages
         )
-        if _process_raw is None:
-            _process_raw = self._scan_process_keywords(page_text)
-        process = normalize_process(_process_raw)
+        if _process_raw:
+            process = normalize_process(_process_raw)
+        if process is None:
+            process = self._extract_process_from_tags(tree)
+        if process is None:
+            process = normalize_process(self._scan_process_keywords(page_text))
         variety = self._extract_field(page_text, ["varietal", "varietales", "variedad"])
         roast_level = normalize_roast(
             self._extract_field(page_text, ["tueste", "tostado", "roast"])
@@ -311,6 +316,17 @@ class FlatNWhiteScraper(BaseScraper):
                 value = match.group(1).strip().rstrip(".,;")
                 if value and len(value) < 60:
                     return value
+        return None
+
+    def _extract_process_from_tags(self, tree: HTMLParser) -> str | None:
+        """
+        WooCommerce renders product tags as <a rel="tag"> links (the "Etiquetas" section).
+        Run normalize_process() on each tag to find a process keyword.
+        """
+        for tag_node in tree.css("a[rel='tag']"):
+            result = normalize_process(tag_node.text())
+            if result:
+                return result
         return None
 
     def _scan_process_keywords(self, text: str) -> str | None:
