@@ -227,6 +227,7 @@ class PuertoBlestScraper(BaseScraper):
             ("honduras", "Honduras"),
             ("panama", "Panamá"), ("panamá", "Panamá"),
             ("rwanda", "Rwanda"),
+            ("bolivia", "Bolivia"),
         ]
         # Check name first (most reliable)
         lower_name = name.lower()
@@ -290,7 +291,7 @@ class PuertoBlestScraper(BaseScraper):
 
     def _extract_tasting_notes(self, text: str) -> list[str] | None:
         match = re.search(
-            r"(?:notas?|notes?|perfil)[:\s]+([^\n\r]{5,120})",
+            r"(?:notas?|notes?|perfil)[:\s]+(.+?)(?:tostado|cosecha|recolecci[oó]n|secado|presentaci[oó]n|beneficio|proceso|varietal|variedad|altura|finca|origen|regi[oó]n|tueste|acidez|dulzura|cuerpo|\n|\r|$)",
             text,
             re.IGNORECASE,
         )

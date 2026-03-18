@@ -242,6 +242,7 @@ class CuervoCafeScraper(BaseScraper):
             ("honduras", "Honduras"),
             ("nicaragua", "Nicaragua"),
             ("rwanda", "Rwanda"),
+            ("bolivia", "Bolivia"),
         ]
         lower = text.lower()
         for keyword, canonical in countries:

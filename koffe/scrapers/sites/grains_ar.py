@@ -104,7 +104,7 @@ class GrainsArScraper(BaseScraper):
             "guatemala", "rwanda", "ruanda",
             "honduras", "costa rica", "panama", "panamá",
             "el salvador", "nicaragua", "burundi",
-            "indonesia", "yemen",
+            "indonesia", "yemen", "bolivia",
         ]
         text = " ".join(tags) + " " + title.lower()
         for country in countries:
