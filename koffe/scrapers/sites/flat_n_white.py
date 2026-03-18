@@ -147,9 +147,10 @@ class FlatNWhiteScraper(BaseScraper):
         )
         altitude_masl = self._extract_altitude(page_text)
         tasting_notes = self._extract_tasting_notes(page_text)
-        brew_methods = normalize_brew_methods(
-            self._extract_field(page_text, ["recomendamos", "método", "metodo", "preparación"])
-        )
+        # Brew methods are mentioned in prose inside the full description tab,
+        # not in a labeled field. Pass the full tab text to normalize_brew_methods().
+        desc_tab = tree.css_first("#tab-description, .woocommerce-Tabs-panel--description")
+        brew_methods = normalize_brew_methods(desc_tab.text() if desc_tab else None)
         attributes: dict = {}
         if tasting_notes:
             attributes["tasting_notes"] = tasting_notes

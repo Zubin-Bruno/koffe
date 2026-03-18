@@ -163,13 +163,13 @@ def normalize_brew_methods(raw: str | None) -> list[str] | None:
         methods.append("Espresso")
     if any(w in lower for w in ["filtro", "filter"]):
         methods.append("Filtro")
-    if any(w in lower for w in ["pour over", "pourover", "v60", "chemex", "hario"]):
+    if any(w in lower for w in ["pour over", "pourover", "v60", "chemex", "hario", "dripper"]):
         methods.append("Pour Over")
     if "aeropress" in lower:
         methods.append("Aeropress")
     if "moka" in lower:
         methods.append("Moka")
-    if any(w in lower for w in ["french press", "prensa francesa"]):
+    if any(w in lower for w in ["french press", "prensa francesa", "prensa"]):
         methods.append("French Press")
     if any(w in lower for w in ["cold brew", "cold drip"]):
         methods.append("Cold Brew")
