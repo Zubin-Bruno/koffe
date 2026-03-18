@@ -41,7 +41,6 @@
   <footer>
     <p>Koffe — datos actualizados diariamente desde sitios de tostadores</p>
   </footer>
-  <div id="modal-container"></div>
   <script>
     // Theme toggle logic
     (function() {
@@ -67,40 +66,123 @@
     })();
   </script>
   <script>
-    function closeModal() {
-      document.getElementById('modal-container').innerHTML = '';
-      document.body.classList.remove('modal-open');
+  // ── Card expand animation ───────────────────────────────────
+  (function () {
+    'use strict';
+    var activeOverlay = null;
+    var activeBackdrop = null;
+    var originRect = null;
+
+    function isMobile() { return window.innerWidth <= 600; }
+
+    function createBackdrop() {
+      var bd = document.createElement('div');
+      bd.className = 'card-backdrop';
+      document.body.appendChild(bd);
+      requestAnimationFrame(function () { bd.classList.add('is-visible'); });
+      bd.addEventListener('click', closeExpanded);
+      return bd;
     }
-    document.addEventListener('keydown', function(e) {
-      if (e.key === 'Escape') closeModal();
+
+    function openExpanded(cardWrapper) {
+      if (activeOverlay) return;  // prevent double-open
+      var panel = cardWrapper.querySelector('.card-expanded');
+      if (!panel) return;
+
+      // FIRST: record where the card is on screen
+      var rect = cardWrapper.getBoundingClientRect();
+      originRect = rect;
+
+      // Build the overlay div with the expanded panel content
+      var overlay = document.createElement('div');
+      overlay.className = 'exp-panel-overlay';
+      overlay.innerHTML = panel.innerHTML;
+
+      // INVERT: position overlay exactly at the card's current location
+      overlay.style.cssText =
+        'top:' + rect.top + 'px;' +
+        'left:' + rect.left + 'px;' +
+        'width:' + rect.width + 'px;' +
+        'height:' + rect.height + 'px;' +
+        'overflow:hidden;opacity:0.5;border-radius:0px;';
+
+      document.body.appendChild(overlay);
+      activeOverlay = overlay;
+      activeBackdrop = createBackdrop();
+      document.body.classList.add('card-expanded-open');
+
+      // PLAY: double rAF ensures browser paints the initial state before transitioning
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          overlay.style.cssText = '';   // clear inline styles so CSS class takes over
+          overlay.classList.add('is-expanded');
+        });
+      });
+
+      // Wire close button
+      var closeBtn = overlay.querySelector('.exp-close');
+      if (closeBtn) closeBtn.addEventListener('click', closeExpanded);
+
+      // Prevent buy-button click from closing panel
+      var buyBtn = overlay.querySelector('.exp-buy-btn');
+      if (buyBtn) buyBtn.addEventListener('click', function (e) { e.stopPropagation(); });
+    }
+
+    function closeExpanded() {
+      if (!activeOverlay) return;
+      var overlay = activeOverlay;
+      var backdrop = activeBackdrop;
+      activeOverlay = null;
+      activeBackdrop = null;
+
+      if (backdrop) backdrop.classList.remove('is-visible');
+
+      overlay.classList.remove('is-expanded');
+      overlay.classList.add('is-closing');
+
+      if (!isMobile() && originRect) {
+        overlay.style.top       = originRect.top + 'px';
+        overlay.style.left      = originRect.left + 'px';
+        overlay.style.width     = originRect.width + 'px';
+        overlay.style.maxHeight = originRect.height + 'px';
+        overlay.style.transform = 'none';
+        overlay.style.opacity   = '0';
+      } else {
+        overlay.style.opacity = '0';
+      }
+
+      // Clean up after transition ends (500ms fallback if transitionend never fires)
+      var cleaned = false;
+      function cleanup() {
+        if (cleaned) return; cleaned = true;
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+        document.body.classList.remove('card-expanded-open');
+      }
+      overlay.addEventListener('transitionend', cleanup, { once: true });
+      setTimeout(cleanup, 500);
+      originRect = null;
+    }
+
+    // Event delegation: works after HTMX partial reloads
+    document.addEventListener('click', function (e) {
+      if (activeOverlay) return;
+      var wrapper = e.target.closest('.card-wrapper');
+      if (!wrapper) return;
+      if (e.target.closest('a') || e.target.closest('button')) return;
+      e.preventDefault();
+      openExpanded(wrapper);
     });
-    document.body.addEventListener('htmx:responseError', function(e) {
+
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && activeOverlay) closeExpanded();
+    });
+
+    // Keep HTMX error logger
+    document.body.addEventListener('htmx:responseError', function (e) {
       console.error('HTMX error:', e.detail.xhr.status, e.detail.xhr.responseText);
     });
-    document.body.addEventListener('htmx:afterSwap', function(e) {
-      if (e.detail.target.id === 'modal-container' && e.detail.target.innerHTML.trim()) {
-        document.body.classList.add('modal-open');
-      }
-    });
-  </script>
-  <script>
-    // Card flip
-    document.addEventListener('click', function(e) {
-      // Close button: flip back to front
-      var closeBtn = e.target.closest('.card-back-close');
-      if (closeBtn) {
-        var flip = closeBtn.closest('.card-flip');
-        if (flip) flip.classList.remove('is-flipped');
-        return;
-      }
-      // Prevent flip when clicking buy link
-      if (e.target.closest('.card-back-buy-btn')) return;
-      // Front click: flip to back
-      var flip = e.target.closest('.card-flip');
-      if (flip && !flip.classList.contains('is-flipped')) {
-        flip.classList.add('is-flipped');
-      }
-    });
+  })();
   </script>
 </body>
 </html>
