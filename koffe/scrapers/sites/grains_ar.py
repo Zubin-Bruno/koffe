@@ -10,6 +10,7 @@ from selectolax.parser import HTMLParser
 from koffe.scrapers.base import BaseScraper, CoffeeData
 from koffe.scrapers.utils import (
     clean_text,
+    normalize_name,
     normalize_process,
     normalize_roast,
     parse_price_cents,
@@ -56,7 +57,7 @@ class GrainsArScraper(BaseScraper):
                         coffees.append(
                             CoffeeData(
                                 external_id=str(variant["id"]),
-                                name=self._build_name(product["title"], variant["title"]),
+                                name=normalize_name(self._build_name(product["title"], variant["title"])),
                                 url=f"{self.start_url}/products/{product['handle']}",
                                 price_cents=parse_price_cents(variant.get("price")),
                                 currency="ARS",

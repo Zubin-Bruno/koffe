@@ -12,6 +12,7 @@ from koffe.scrapers.base import BaseScraper, CoffeeData
 from koffe.scrapers.utils import (
     clean_text,
     normalize_intensity,
+    normalize_name,
     normalize_process,
     normalize_roast,
     parse_price_cents,
@@ -201,7 +202,7 @@ class FuegoTostadoresScraper(BaseScraper):
 
         return CoffeeData(
             external_id=slug,
-            name=name,
+            name=normalize_name(name),
             url=url,
             price_cents=price_cents,
             currency="ARS",

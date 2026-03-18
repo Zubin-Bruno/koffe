@@ -78,6 +78,43 @@ def clean_text(text: str | None) -> str | None:
     return re.sub(r"\s+", " ", text).strip() or None
 
 
+def normalize_name(raw: str | None) -> str | None:
+    """
+    Clean up a coffee product name:
+    - Remove weight mentions like '250g', '250 G', '- 250 G', '1kg', '250-g'
+    - Normalize to title case (first letter of each word capitalized)
+
+    Examples:
+        'Café de especialidad 250g Tanzania' → 'Café De Especialidad Tanzania'
+        'JUAN CHAMORRO CASTILLO LAVADO - 250 G' → 'Juan Chamorro Castillo Lavado'
+        '250gr / 1kg Blend' → 'Blend'
+    """
+    if not raw:
+        return None
+
+    # Remove weight patterns with an optional preceding dash/separator.
+    # The [\s-]* between the number and unit handles slugs like "250-g" or "1-kg".
+    # Handles: "250g", "250 G", "- 250 G", "250-g", "1kg", "1-kg", "250gr", "250gramos"
+    cleaned = re.sub(
+        r"\s*[-–—]?\s*\d+[\s-]*(?:kg|g(?:r(?:amos?)?)?)s?\b",
+        "",
+        raw,
+        flags=re.IGNORECASE,
+    )
+
+    # Clean up any leftover leading/trailing separator characters (e.g. "/ Café" or "Café /")
+    cleaned = re.sub(r"^[\s/—–-]+", "", cleaned)
+    cleaned = re.sub(r"[\s/—–-]+$", "", cleaned)
+
+    # Collapse multiple spaces
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+
+    if not cleaned:
+        return None
+
+    return cleaned.title()
+
+
 def normalize_process(raw: str | None) -> str | None:
     """
     Normalize processing method to one of: Natural, Washed, Honey, Anaerobic, Other.
