@@ -173,6 +173,7 @@ def _upsert_coffees(
                 existing.body = data.body
             existing.variety = data.variety
             existing.altitude_masl = data.altitude_masl
+            existing.brew_methods = data.brew_methods
             existing.attributes = data.attributes
             existing.last_seen_at = now
         else:
@@ -196,6 +197,7 @@ def _upsert_coffees(
                     body=data.body,
                     variety=data.variety,
                     altitude_masl=data.altitude_masl,
+                    brew_methods=data.brew_methods,
                     attributes=data.attributes,
                     first_seen_at=now,
                     last_seen_at=now,

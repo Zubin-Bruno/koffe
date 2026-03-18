@@ -143,6 +143,40 @@ def normalize_intensity(raw: str | None) -> int | None:
     return None
 
 
+def normalize_brew_methods(raw: str | None) -> list[str] | None:
+    """
+    Convert a raw brew method string into a list of canonical method names.
+
+    Examples:
+        "Espresso / Filtro"         → ["Espresso", "Filtro"]
+        "Pour over y aeropress"     → ["Pour Over", "Aeropress"]
+        "prensa francesa"           → ["French Press"]
+        "unrelated text"            → None
+    """
+    if not raw:
+        return None
+
+    lower = raw.lower()
+
+    methods = []
+    if "espresso" in lower:
+        methods.append("Espresso")
+    if any(w in lower for w in ["filtro", "filter"]):
+        methods.append("Filtro")
+    if any(w in lower for w in ["pour over", "pourover", "v60", "chemex", "hario"]):
+        methods.append("Pour Over")
+    if "aeropress" in lower:
+        methods.append("Aeropress")
+    if "moka" in lower:
+        methods.append("Moka")
+    if any(w in lower for w in ["french press", "prensa francesa"]):
+        methods.append("French Press")
+    if any(w in lower for w in ["cold brew", "cold drip"]):
+        methods.append("Cold Brew")
+
+    return methods if methods else None
+
+
 def normalize_roast(raw: str | None) -> str | None:
     """
     Normalize roast level to one of: Light, Medium-Light, Medium, Medium-Dark, Dark.

@@ -18,6 +18,7 @@ from koffe.scrapers.utils import (
 
 BASE_URL = "https://www.cafepuertoblest.com"
 LISTING_URL = f"{BASE_URL}/cafe-especial/"
+FILTER_URL = f"{BASE_URL}/filtrados/"
 
 
 class PuertoBlestScraper(BaseScraper):
@@ -25,6 +26,10 @@ class PuertoBlestScraper(BaseScraper):
 
     async def scrape(self, browser) -> list[CoffeeData]:
         coffees: list[CoffeeData] = []
+
+        # Fetch the filter-only listing page to know which slugs are filter coffees
+        filter_slugs = await self._get_slugs_from_listing(browser, FILTER_URL)
+        logger.debug(f"[puerto-blest] Filter slugs: {filter_slugs}")
 
         page = await browser.new_page()
         try:
@@ -70,8 +75,9 @@ class PuertoBlestScraper(BaseScraper):
         for entry in product_links:
             url = entry["url"]
             slug = url.rstrip("/").split("/")[-1]
+            brew_methods = ["Filtro"] if slug in filter_slugs else ["Espresso"]
             try:
-                coffee = await self._scrape_product(browser, url, slug, entry["price_text"])
+                coffee = await self._scrape_product(browser, url, slug, entry["price_text"], brew_methods)
                 if coffee:
                     coffees.append(coffee)
             except Exception as e:
@@ -80,8 +86,33 @@ class PuertoBlestScraper(BaseScraper):
         logger.info(f"[puerto-blest] Total coffees found: {len(coffees)}")
         return coffees
 
+    async def _get_slugs_from_listing(self, browser, url: str) -> set[str]:
+        """Fetch a listing page and return the set of product slugs found on it."""
+        page = await browser.new_page()
+        try:
+            await page.goto(url, wait_until="networkidle", timeout=60000)
+            html = await page.content()
+        except Exception as e:
+            logger.warning(f"[puerto-blest] Could not fetch {url}: {e}")
+            return set()
+        finally:
+            await page.close()
+
+        tree = HTMLParser(html)
+        slugs: set[str] = set()
+        for card in tree.css(".js-item-product"):
+            link = card.css_first("a[href*='/productos/']")
+            if not link:
+                continue
+            href = link.attributes.get("href", "")
+            if href:
+                slug = href.rstrip("/").split("/")[-1]
+                slugs.add(slug)
+        return slugs
+
     async def _scrape_product(
-        self, browser, url: str, slug: str, listing_price_text: str | None = None
+        self, browser, url: str, slug: str, listing_price_text: str | None = None,
+        brew_methods: list[str] | None = None,
     ) -> CoffeeData | None:
         page = await browser.new_page()
         try:
@@ -178,6 +209,7 @@ class PuertoBlestScraper(BaseScraper):
             process=process,
             variety=variety,
             altitude_masl=altitude_masl,
+            brew_methods=brew_methods,
             attributes=attributes,
         )
 

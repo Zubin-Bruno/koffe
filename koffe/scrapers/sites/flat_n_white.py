@@ -14,6 +14,7 @@ from selectolax.parser import HTMLParser
 from koffe.scrapers.base import BaseScraper, CoffeeData
 from koffe.scrapers.utils import (
     clean_text,
+    normalize_brew_methods,
     normalize_process,
     normalize_roast,
     parse_price_cents,
@@ -146,6 +147,9 @@ class FlatNWhiteScraper(BaseScraper):
         )
         altitude_masl = self._extract_altitude(page_text)
         tasting_notes = self._extract_tasting_notes(page_text)
+        brew_methods = normalize_brew_methods(
+            self._extract_field(page_text, ["recomendamos", "método", "metodo", "preparación"])
+        )
         attributes: dict = {}
         if tasting_notes:
             attributes["tasting_notes"] = tasting_notes
@@ -178,6 +182,7 @@ class FlatNWhiteScraper(BaseScraper):
                 roast_level=roast_level,
                 variety=variety,
                 altitude_masl=altitude_masl,
+                brew_methods=brew_methods,
                 attributes=attributes,
             )
         ]

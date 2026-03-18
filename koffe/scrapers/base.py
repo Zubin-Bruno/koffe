@@ -24,6 +24,7 @@ class CoffeeData:
     body: int | None = None       # 1–5
     variety: str | None = None
     altitude_masl: int | None = None
+    brew_methods: list[str] | None = None
     attributes: dict[str, Any] = field(default_factory=dict)
 
 

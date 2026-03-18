@@ -11,6 +11,7 @@ from selectolax.parser import HTMLParser
 from koffe.scrapers.base import BaseScraper, CoffeeData
 from koffe.scrapers.utils import (
     clean_text,
+    normalize_brew_methods,
     normalize_process,
     parse_weight_grams,
 )
@@ -148,6 +149,7 @@ class CuervoCafeScraper(BaseScraper):
         process = normalize_process(self._extract_field(page_text, ["proceso", "process", "beneficio"]))
         variety = clean_text(self._extract_field(page_text, ["variedad", "variety", "variedades"]))
         altitude_masl = self._extract_altitude(page_text)
+        brew_methods = self._extract_brew_methods(page_text)
 
         # Acidity / sweetness / body — Elementor rating widgets with numeric content attr.
         # Each rating block is preceded by an h2 like "Acidez:", "Cuerpo:", "Dulzor:".
@@ -180,6 +182,7 @@ class CuervoCafeScraper(BaseScraper):
             acidity=acidity,
             sweetness=sweetness,
             body=body,
+            brew_methods=brew_methods,
             attributes={"category": category},
         )
 
@@ -256,3 +259,10 @@ class CuervoCafeScraper(BaseScraper):
         if match:
             return int(match.group(1))
         return None
+
+    def _extract_brew_methods(self, text: str) -> list[str] | None:
+        """Look for a 'Recomendamos:' line and normalize its brew method text."""
+        match = re.search(r"recomendamos[:\s]+([^\n\r]{3,80})", text, re.IGNORECASE)
+        if not match:
+            return None
+        return normalize_brew_methods(match.group(1))

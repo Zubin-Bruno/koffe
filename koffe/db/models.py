@@ -63,6 +63,7 @@ class Coffee(Base):
     variety: Mapped[str | None] = mapped_column(String)
     altitude_masl: Mapped[int | None] = mapped_column(Integer)
     attributes: Mapped[dict[str, Any] | None] = mapped_column(JSON)
+    brew_methods: Mapped[list[str] | None] = mapped_column(JSON)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
