@@ -31,6 +31,7 @@
 [data-theme="dark"] .tag--process  { background: #1a3a28; color: #86efac; }
 [data-theme="dark"] .tag--roast    { background: #3a2e1a; color: #fcd34d; }
 [data-theme="dark"] .tag--brew     { background: #2e1a4a; color: #c4b5fd; }
+[data-theme="dark"] .tag--notes    { background: #3a1e0f; color: #fdba74; }
 [data-theme="dark"] .tag--sold-out { background: #3a1a1a; color: #fca5a5; }
 
 body {
@@ -259,6 +260,7 @@ main {
 .tag--process { background: #dcfce7; color: #15803d; }
 .tag--roast   { background: #fef3c7; color: #92400e; }
 .tag--brew    { background: #ede9fe; color: #6d28d9; }
+.tag--notes   { background: #fff7ed; color: #c2410c; }
 .tag--sold-out { background: #fee2e2; color: #b91c1c; }
 
 /* ── Card body text ───────────────────────────────────────── */
@@ -904,6 +906,7 @@ body.card-expanded-open { overflow: hidden; }
 .exp-bar-value { font-size: 0.7rem; color: var(--text-muted); width: 2rem; text-align: right; flex-shrink: 0; }
 
 .exp-section--brew .exp-brew-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
+.exp-section--notes .exp-notes-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 
 .exp-footer {
   border-top: 1px solid var(--border);

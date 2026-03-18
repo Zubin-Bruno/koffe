@@ -76,7 +76,17 @@
         </div>
 
         {# Notes #}
-        {% if coffee.description %}
+        {% set tasting_notes = coffee.attributes.get('tasting_notes', []) %}
+        {% if tasting_notes %}
+        <div class="exp-section exp-section--notes">
+          <p class="exp-section-label">Notas de Cata</p>
+          <div class="exp-notes-tags">
+            {% for note in tasting_notes %}
+            <span class="tag tag--notes">{{ note }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% elif coffee.description %}
         <div class="exp-section">
           <p class="exp-section-label">Notas de Cata</p>
           <p class="exp-notes">"{{ coffee.description }}"</p>
