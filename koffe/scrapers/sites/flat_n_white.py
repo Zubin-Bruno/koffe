@@ -138,9 +138,13 @@ class FlatNWhiteScraper(BaseScraper):
         # Metadata from page body text
         page_text = tree.body.text() if tree.body else ""
         origin_country = self._extract_origin(name, page_text)
-        process = normalize_process(
-            self._extract_field(page_text, ["beneficio", "proceso", "process"])
+        _process_raw = self._extract_field(
+            page_text,
+            ["beneficio", "beneficiado", "proceso", "process", "fermentacion", "fermentación", "método"]
         )
+        if _process_raw is None:
+            _process_raw = self._scan_process_keywords(page_text)
+        process = normalize_process(_process_raw)
         variety = self._extract_field(page_text, ["varietal", "varietales", "variedad"])
         roast_level = normalize_roast(
             self._extract_field(page_text, ["tueste", "tostado", "roast"])
@@ -306,6 +310,28 @@ class FlatNWhiteScraper(BaseScraper):
                 value = match.group(1).strip().rstrip(".,;")
                 if value and len(value) < 60:
                     return value
+        return None
+
+    def _scan_process_keywords(self, text: str) -> str | None:
+        """
+        Fallback: scan page text for standalone process keywords when no labeled
+        field was found. Returns the raw keyword so normalize_process() can map it.
+        Order matters — most specific patterns first.
+        """
+        candidates = [
+            (r"\banaer[oó]bic[oa]?\b", "anaerobico"),
+            (r"\bdoble\s+fermentaci[oó]n\b", "anaerobico"),
+            (r"\blavado\b", "lavado"),
+            (r"\bwashed\b", "washed"),
+            (r"\bhoney\b", "honey"),
+            (r"\bmiel\b", "miel"),
+            (r"\bnatural\b", "natural"),
+            (r"\bseco\b", "seco"),
+        ]
+        lower = text.lower()
+        for pattern, keyword in candidates:
+            if re.search(pattern, lower):
+                return keyword
         return None
 
     def _extract_altitude(self, text: str) -> int | None:

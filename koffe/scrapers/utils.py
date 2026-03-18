@@ -86,14 +86,19 @@ def normalize_process(raw: str | None) -> str | None:
         return None
 
     lower = raw.lower()
+    # Anaerobic must come FIRST — it's the most specific.
+    # "anaeróbico natural" should map to Anaerobic, not Natural.
+    if any(w in lower for w in [
+        "anaerobic", "anaeróbico", "anaerobico",
+        "doble fermentacion", "doble fermentación",
+    ]):
+        return "Anaerobic"
     if any(w in lower for w in ["natural", "natur", "seco", "dry"]):
         return "Natural"
-    if any(w in lower for w in ["washed", "lavado", "húmedo", "wet"]):
+    if any(w in lower for w in ["washed", "lavado", "húmedo", "humedo", "wet"]):
         return "Washed"
     if any(w in lower for w in ["honey", "miel"]):
         return "Honey"
-    if "anaerobic" in lower or "anaeróbico" in lower:
-        return "Anaerobic"
     return None
 
 
