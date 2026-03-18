@@ -158,6 +158,9 @@ class CuervoCafeScraper(BaseScraper):
         # Each rating block is preceded by an h2 like "Acidez:", "Cuerpo:", "Dulzor:".
         acidity, sweetness, body = self._extract_ratings(tree)
 
+        # Tasting notes
+        tasting_notes = self._extract_tasting_notes(page_text)
+
         # Availability — WooCommerce marks out-of-stock
         stock_node = tree.css_first(".out-of-stock") or tree.css_first(".stock.out-of-stock")
         is_available = stock_node is None
@@ -186,8 +189,20 @@ class CuervoCafeScraper(BaseScraper):
             sweetness=sweetness,
             body=body,
             brew_methods=brew_methods,
-            attributes={"category": category},
+            attributes={"category": category, **({"tasting_notes": tasting_notes} if tasting_notes else {})},
         )
+
+    def _extract_tasting_notes(self, text: str) -> list[str] | None:
+        match = re.search(
+            r"(?:notas?|notes?|perfil|sabores?)[:\s]+(.+?)(?:tostado|cosecha|recolecci[oó]n|secado|presentaci[oó]n|beneficio|proceso|varietal|variedad|altura|finca|origen|regi[oó]n|tueste|acidez|dulzura|cuerpo|\n|\r|$)",
+            text,
+            re.IGNORECASE,
+        )
+        if match:
+            raw = match.group(1).strip()
+            notes = [n.strip() for n in re.split(r"[,/y&+]", raw) if n.strip()]
+            return notes[:6] if notes else None
+        return None
 
     def _extract_ratings(self, tree: HTMLParser) -> tuple[int | None, int | None, int | None]:
         """
