@@ -18,8 +18,15 @@ from koffe.scrapers.utils import (
 )
 
 BASE_URL = "https://www.cafepuertoblest.com"
-LISTING_URL = f"{BASE_URL}/cafe-especial/"
-FILTER_URL = f"{BASE_URL}/filtrados/"
+
+# Each listing page we scrape.  Order matters: /filtrados/ and /espressos/ first
+# so their brew_method labels take priority when a product appears on multiple pages.
+# /cafe-especial/ is the catch-all that picks up anything not on the other two.
+LISTING_PAGES = [
+    {"url": f"{BASE_URL}/filtrados/",     "brew_method": "Filtro"},
+    {"url": f"{BASE_URL}/espressos/",     "brew_method": "Espresso"},
+    {"url": f"{BASE_URL}/cafe-especial/", "brew_method": None},  # catch-all
+]
 
 
 class PuertoBlestScraper(BaseScraper):
@@ -28,29 +35,77 @@ class PuertoBlestScraper(BaseScraper):
     async def scrape(self, browser) -> list[CoffeeData]:
         coffees: list[CoffeeData] = []
 
-        # Fetch the filter-only listing page to know which slugs are filter coffees
-        filter_slugs = await self._get_slugs_from_listing(browser, FILTER_URL)
-        logger.debug(f"[puerto-blest] Filter slugs: {filter_slugs}")
+        # Collect product links from all listing pages, dedup by URL.
+        # First-seen entry wins, so brew_method from /filtrados/ and /espressos/
+        # takes priority over the catch-all /cafe-especial/ page.
+        product_entries: dict[str, dict] = {}  # url -> {url, price_text, brew_method}
+        filter_slugs: set[str] = set()
+        espresso_slugs: set[str] = set()
 
+        for lp in LISTING_PAGES:
+            entries = await self._collect_listing(browser, lp["url"])
+            for entry in entries:
+                slug = entry["url"].rstrip("/").split("/")[-1]
+                if lp["brew_method"] == "Filtro":
+                    filter_slugs.add(slug)
+                elif lp["brew_method"] == "Espresso":
+                    espresso_slugs.add(slug)
+                if entry["url"] not in product_entries:
+                    entry["brew_method"] = lp["brew_method"]
+                    product_entries[entry["url"]] = entry
+
+        logger.debug(f"[puerto-blest] Found {len(product_entries)} unique product links")
+        logger.debug(f"[puerto-blest] Filter slugs: {filter_slugs}")
+        logger.debug(f"[puerto-blest] Espresso slugs: {espresso_slugs}")
+
+        for entry in product_entries.values():
+            url = entry["url"]
+            slug = url.rstrip("/").split("/")[-1]
+
+            # Assign brew_methods based on which listing pages the product appeared on
+            if slug in filter_slugs and slug in espresso_slugs:
+                brew_methods = ["Filtro", "Espresso"]
+            elif slug in filter_slugs:
+                brew_methods = ["Filtro"]
+            elif slug in espresso_slugs:
+                brew_methods = ["Espresso"]
+            else:
+                brew_methods = []  # only on catch-all, no specific brew method
+
+            try:
+                coffee = await self._scrape_product(browser, url, slug, entry["price_text"], brew_methods or None)
+                if coffee:
+                    coffees.append(coffee)
+            except Exception as e:
+                logger.warning(f"[puerto-blest] Failed to scrape {url}: {e}")
+
+        logger.info(f"[puerto-blest] Total coffees found: {len(coffees)}")
+        return coffees
+
+    async def _collect_listing(self, browser, listing_url: str) -> list[dict]:
+        """Load a listing page, click 'Mostrar más' to load ALL products, return entries."""
         page = await browser.new_page()
         try:
-            await page.goto(LISTING_URL, wait_until="networkidle", timeout=60000)
+            await page.goto(listing_url, wait_until="networkidle", timeout=60000)
 
-            # Click "Mostrar más productos" until all products are loaded
+            # Click "Mostrar más" until all products are loaded
             for _ in range(20):  # safety cap
                 btn = page.locator("a.js-load-more-btn")
-                if await btn.count() == 0 or not await btn.is_visible():
+                if await btn.count() > 0 and await btn.is_visible():
+                    await btn.click()
+                    await page.wait_for_load_state("networkidle")
+                else:
                     break
-                await btn.click()
-                await page.wait_for_load_state("networkidle")
 
             html = await page.content()
+        except Exception as e:
+            logger.warning(f"[puerto-blest] Could not fetch {listing_url}: {e}")
+            return []
         finally:
             await page.close()
 
         tree = HTMLParser(html)
-
-        product_links: list[dict] = []
+        entries: list[dict] = []
         seen: set[str] = set()
 
         for card in tree.css(".js-item-product"):
@@ -62,54 +117,15 @@ class PuertoBlestScraper(BaseScraper):
                 continue
             seen.add(href)
 
-            # Ensure absolute URL
             if href.startswith("/"):
                 href = BASE_URL + href
 
             price_node = card.css_first(".js-price-display")
             price_text = price_node.text() if price_node else None
 
-            product_links.append({"url": href, "price_text": price_text})
+            entries.append({"url": href, "price_text": price_text})
 
-        logger.debug(f"[puerto-blest] Found {len(product_links)} product links")
-
-        for entry in product_links:
-            url = entry["url"]
-            slug = url.rstrip("/").split("/")[-1]
-            brew_methods = ["Filtro"] if slug in filter_slugs else ["Espresso"]
-            try:
-                coffee = await self._scrape_product(browser, url, slug, entry["price_text"], brew_methods)
-                if coffee:
-                    coffees.append(coffee)
-            except Exception as e:
-                logger.warning(f"[puerto-blest] Failed to scrape {url}: {e}")
-
-        logger.info(f"[puerto-blest] Total coffees found: {len(coffees)}")
-        return coffees
-
-    async def _get_slugs_from_listing(self, browser, url: str) -> set[str]:
-        """Fetch a listing page and return the set of product slugs found on it."""
-        page = await browser.new_page()
-        try:
-            await page.goto(url, wait_until="networkidle", timeout=60000)
-            html = await page.content()
-        except Exception as e:
-            logger.warning(f"[puerto-blest] Could not fetch {url}: {e}")
-            return set()
-        finally:
-            await page.close()
-
-        tree = HTMLParser(html)
-        slugs: set[str] = set()
-        for card in tree.css(".js-item-product"):
-            link = card.css_first("a[href*='/productos/']")
-            if not link:
-                continue
-            href = link.attributes.get("href", "")
-            if href:
-                slug = href.rstrip("/").split("/")[-1]
-                slugs.add(slug)
-        return slugs
+        return entries
 
     async def _scrape_product(
         self, browser, url: str, slug: str, listing_price_text: str | None = None,
