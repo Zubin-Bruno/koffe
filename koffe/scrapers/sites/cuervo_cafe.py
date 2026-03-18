@@ -159,7 +159,7 @@ class CuervoCafeScraper(BaseScraper):
         acidity, sweetness, body = self._extract_ratings(tree)
 
         # Tasting notes
-        tasting_notes = self._extract_tasting_notes(page_text)
+        tasting_notes = self._extract_tasting_notes(page_text, tree)
 
         # Availability — WooCommerce marks out-of-stock
         stock_node = tree.css_first(".out-of-stock") or tree.css_first(".stock.out-of-stock")
@@ -192,7 +192,18 @@ class CuervoCafeScraper(BaseScraper):
             attributes={"category": category, **({"tasting_notes": tasting_notes} if tasting_notes else {})},
         )
 
-    def _extract_tasting_notes(self, text: str) -> list[str] | None:
+    def _extract_tasting_notes(self, text: str, tree: HTMLParser) -> list[str] | None:
+        # Primary: Cuervo stores notes in a Google-Sheets-pasted span
+        node = tree.css_first("span[data-sheets-root='1']")
+        if node:
+            raw = node.text()
+            # &nbsp; becomes \u00a0 in Python — treat it like a space
+            notes = [n.strip() for n in re.split(r"[\s\u00a0]+", raw) if n.strip()]
+            # Only accept if it looks like tasting notes (2–6 short items)
+            if 2 <= len(notes) <= 6 and all(len(n) <= 40 for n in notes):
+                return notes
+
+        # Fallback: regex for labeled fields like "Notas: Panela, Cítrico"
         match = re.search(
             r"(?:notas?|notes?|perfil|sabores?)[:\s]+(.+?)(?:tostado|cosecha|recolecci[oó]n|secado|presentaci[oó]n|beneficio|proceso|varietal|variedad|altura|finca|origen|regi[oó]n|tueste|acidez|dulzura|cuerpo|\n|\r|$)",
             text,
