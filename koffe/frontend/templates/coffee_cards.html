@@ -2,53 +2,140 @@
 
 <div class="card-grid">
 {% for coffee in coffees %}
-  <article class="card {% if not coffee.is_available %}card--unavailable{% endif %}"
-           hx-get="/coffees/{{ coffee.id }}/detail"
-           hx-target="#modal-container"
-           hx-swap="innerHTML"
-           style="cursor:pointer;">
+  <div class="card-flip-wrapper {% if not coffee.is_available %}card--unavailable{% endif %}">
+    <div class="card-flip">
 
-    <div class="card-image">
-      <img
-        src="{{ coffee.image_url or '/static/images/coffee-placeholder.svg' }}"
-        alt="{{ coffee.name }}"
-        loading="lazy"
-        onerror="this.src='/static/images/coffee-placeholder.svg'"
-      />
-    </div>
-
-    <div class="card-body">
-      <h2 class="card-name">{{ coffee.name }}</h2>
-
-      <div class="card-tags">
-        {% if coffee.origin_country %}
-        <span class="tag tag--origin">{{ coffee.origin_country }}</span>
-        {% endif %}
-        {% if coffee.process %}
-        <span class="tag tag--process">{{ coffee.process }}</span>
-        {% endif %}
-        {% for method in coffee.brew_methods %}
-        <span class="tag tag--brew">{{ method }}</span>
-        {% endfor %}
-        {% if not coffee.is_available %}
-        <span class="tag tag--sold-out">Agotado</span>
-        {% endif %}
+      {# ── Front face ── #}
+      <div class="card-face card-front">
+        <div class="card-image">
+          <img
+            src="{{ coffee.image_url or '/static/images/coffee-placeholder.svg' }}"
+            alt="{{ coffee.name }}"
+            loading="lazy"
+            onerror="this.src='/static/images/coffee-placeholder.svg'"
+          />
+        </div>
+        <div class="card-body">
+          <h2 class="card-name">{{ coffee.name }}</h2>
+          <div class="card-tags">
+            {% if coffee.origin_country %}
+            <span class="tag tag--origin">{{ coffee.origin_country }}</span>
+            {% endif %}
+            {% if coffee.process %}
+            <span class="tag tag--process">{{ coffee.process }}</span>
+            {% endif %}
+            {% for method in coffee.brew_methods %}
+            <span class="tag tag--brew">{{ method }}</span>
+            {% endfor %}
+            {% if not coffee.is_available %}
+            <span class="tag tag--sold-out">Agotado</span>
+            {% endif %}
+          </div>
+          <div class="card-footer">
+            <span class="card-price">
+              {% if coffee.price_display %}
+                {{ coffee.price_display }} {{ coffee.currency }}
+              {% else %}
+                —
+              {% endif %}
+            </span>
+            {% if coffee.weight_grams %}
+            <span class="card-weight">{{ coffee.weight_grams }}g</span>
+            {% endif %}
+          </div>
+        </div>
       </div>
 
-      <div class="card-footer">
-        <span class="card-price">
-          {% if coffee.price_display %}
-            {{ coffee.price_display }} {{ coffee.currency }}
-          {% else %}
-            —
+      {# ── Back face ── #}
+      <div class="card-face card-back">
+
+        {# Header: name + close button #}
+        <div class="card-back-header">
+          <div>
+            <p class="card-back-name">{{ coffee.name }}</p>
+            <p class="card-back-roaster">{{ coffee.roaster_name or '' }}</p>
+          </div>
+          <button class="card-back-close" aria-label="Cerrar">✕</button>
+        </div>
+
+        <hr class="card-back-divider" />
+
+        {# Detail rows #}
+        <div class="card-back-details">
+          {% if coffee.origin_country %}
+          <div class="detail-item">
+            <span class="detail-item-label">Origen</span>
+            <span class="detail-item-value">{{ coffee.origin_country }}</span>
+          </div>
           {% endif %}
-        </span>
-        {% if coffee.weight_grams %}
-        <span class="card-weight">{{ coffee.weight_grams }}g</span>
+          {% if coffee.variety %}
+          <div class="detail-item">
+            <span class="detail-item-label">Variedad</span>
+            <span class="detail-item-value">{{ coffee.variety }}</span>
+          </div>
+          {% endif %}
+          {% if coffee.altitude_masl %}
+          <div class="detail-item">
+            <span class="detail-item-label">Altura</span>
+            <span class="detail-item-value">{{ coffee.altitude_masl }} m</span>
+          </div>
+          {% endif %}
+          {% if coffee.process %}
+          <div class="detail-item">
+            <span class="detail-item-label">Proceso</span>
+            <span class="detail-item-value">{{ coffee.process }}</span>
+          </div>
+          {% endif %}
+        </div>
+
+        {# Notes (truncated to 130 chars) #}
+        {% if coffee.description %}
+        <p class="card-back-notes">{{ coffee.description[:130] }}{% if coffee.description | length > 130 %}…{% endif %}</p>
         {% endif %}
+
+        {# Balance: intensity dots #}
+        {% if coffee.acidity or coffee.sweetness or coffee.body %}
+        <div class="card-back-balance">
+          <p class="card-back-balance-title">Balance</p>
+          <div class="card-intensity">
+            {% for label, value in [('Acidez', coffee.acidity), ('Cuerpo', coffee.body), ('Dulzura', coffee.sweetness)] %}
+            <div class="intensity-row">
+              <span class="intensity-label">{{ label }}</span>
+              <span class="intensity-dots">
+                {% if value %}
+                  {% for i in range(1, 6) %}
+                  <span class="dot {{ 'dot--on' if i <= value else '' }}"></span>
+                  {% endfor %}
+                {% else %}
+                  <span style="color:var(--text-muted);font-size:0.75rem">—</span>
+                {% endif %}
+              </span>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {# Brew methods #}
+        {% if coffee.brew_methods %}
+        <div class="card-back-brew">
+          <p class="card-back-brew-title">Preparación</p>
+          <div class="card-back-brew-tags">
+            {% for method in coffee.brew_methods %}
+            <span class="tag tag--brew">{{ method }}</span>
+            {% endfor %}
+          </div>
+        </div>
+        {% endif %}
+
+        {# Footer: store link #}
+        <div class="card-back-footer">
+          <a class="card-back-buy-btn" href="{{ coffee.url }}" target="_blank" rel="noopener">Ver en tienda →</a>
+        </div>
+
       </div>
     </div>
-  </article>
+  </div>
 {% else %}
   <p class="empty-state">No se encontraron cafés con esos filtros.</p>
 {% endfor %}

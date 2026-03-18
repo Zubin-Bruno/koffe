@@ -83,5 +83,24 @@
       }
     });
   </script>
+  <script>
+    // Card flip
+    document.addEventListener('click', function(e) {
+      // Close button: flip back to front
+      var closeBtn = e.target.closest('.card-back-close');
+      if (closeBtn) {
+        var flip = closeBtn.closest('.card-flip');
+        if (flip) flip.classList.remove('is-flipped');
+        return;
+      }
+      // Prevent flip when clicking buy link
+      if (e.target.closest('.card-back-buy-btn')) return;
+      // Front click: flip to back
+      var flip = e.target.closest('.card-flip');
+      if (flip && !flip.classList.contains('is-flipped')) {
+        flip.classList.add('is-flipped');
+      }
+    });
+  </script>
 </body>
 </html>
