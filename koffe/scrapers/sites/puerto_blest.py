@@ -62,6 +62,10 @@ class PuertoBlestScraper(BaseScraper):
             url = entry["url"]
             slug = url.rstrip("/").split("/")[-1]
 
+            if "box-de-regalo" in slug:
+                logger.debug(f"[puerto-blest] Skipping gift box: {slug}")
+                continue
+
             # Assign brew_methods based on which listing pages the product appeared on
             if slug in filter_slugs and slug in espresso_slugs:
                 brew_methods = ["Filtro", "Espresso"]
