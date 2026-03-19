@@ -203,6 +203,21 @@ class CuervoCafeScraper(BaseScraper):
             if 2 <= len(notes) <= 6 and all(len(n) <= 40 for n in notes):
                 return notes
 
+        # Secondary: look for an Elementor heading that uses &nbsp; as separators
+        skip_labels = {"acidez", "cuerpo", "dulzor", "proceso", "variedad",
+                        "origen", "tueste", "finca", "cosecha", "altura", "región"}
+        for heading in tree.css("h2.elementor-heading-title"):
+            h_text = heading.text()
+            # Skip headings that are known attribute labels
+            if any(label in h_text.lower() for label in skip_labels):
+                continue
+            # Only consider headings that contain non-breaking spaces (note separators)
+            if "\u00a0" not in h_text:
+                continue
+            notes = [n.strip() for n in re.split(r"\u00a0+", h_text) if n.strip()]
+            if 2 <= len(notes) <= 6 and all(len(n) <= 40 for n in notes):
+                return notes
+
         # Fallback: regex for labeled fields like "Notas: Panela, Cítrico"
         match = re.search(
             r"(?:notas?|notes?|perfil|sabores?)[:\s]+(.+?)(?:tostado|cosecha|recolecci[oó]n|secado|presentaci[oó]n|beneficio|proceso|varietal|variedad|altura|finca|origen|regi[oó]n|tueste|acidez|dulzura|cuerpo|\n|\r|$)",
