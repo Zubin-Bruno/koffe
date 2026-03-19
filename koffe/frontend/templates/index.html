@@ -2,6 +2,11 @@
 {% block title %}Koffe — Explorar cafés{% endblock %}
 
 {% block content %}
+<div class="explorer-header">
+  <h1>Explorar</h1>
+  <p class="explorer-subtitle">{{ total_available }} café{{ 's' if total_available != 1 else '' }} disponible{{ 's' if total_available != 1 else '' }}</p>
+</div>
+
 <section class="filters">
   <form
     hx-get="/coffees"
@@ -10,7 +15,8 @@
     hx-push-url="true"
     id="filter-form"
   >
-    <div class="filter-row">
+    {# ── Primary filter bar (always visible) ── #}
+    <div class="filter-bar">
 
       <label>
         Tostador
@@ -42,98 +48,158 @@
         </select>
       </label>
 
-      <label>
-        Variedad
-        <select name="variety">
-          <option value="">Todos</option>
-          {% for v in varieties %}
-          <option value="{{ v }}" {% if filters.variety == v %}selected{% endif %}>{{ v }}</option>
-          {% endfor %}
-        </select>
+      <label class="filter-search">
+        Buscar
+        <input
+          type="text"
+          name="search"
+          placeholder="Nombre, notas..."
+          value="{{ filters.search }}"
+          hx-get="/coffees"
+          hx-target="#results"
+          hx-trigger="input changed delay:400ms"
+          hx-include="#filter-form"
+          hx-push-url="true"
+        />
       </label>
 
-      <label>
-        Método
-        <select name="brew_method">
-          <option value="">Todos</option>
-          {% for m in brew_methods_options %}
-          <option value="{{ m }}" {% if filters.brew_method == m %}selected{% endif %}>{{ m }}</option>
-          {% endfor %}
-        </select>
-      </label>
-
-      <label>
-        Notas de cata
-        <select name="tasting_note">
-          <option value="">Todos</option>
-          {% for n in tasting_notes_options %}
-          <option value="{{ n }}" {% if filters.tasting_note == n %}selected{% endif %}>{{ n }}</option>
-          {% endfor %}
-        </select>
-      </label>
-
-      <label>
-        Acidez
-        <div class="filter-range">
-          <select name="acidity_min" class="filter-narrow">
-            <option value="">Min</option>
-            {% for i in range(1, 6) %}
-            <option value="{{ i }}" {% if filters.acidity_min|string == i|string %}selected{% endif %}>{{ i }}</option>
-            {% endfor %}
-          </select>
-          <span class="range-dash">—</span>
-          <select name="acidity_max" class="filter-narrow">
-            <option value="">Max</option>
-            {% for i in range(1, 6) %}
-            <option value="{{ i }}" {% if filters.acidity_max|string == i|string %}selected{% endif %}>{{ i }}</option>
-            {% endfor %}
-          </select>
-        </div>
-      </label>
-
-      <label>
-        Dulzor
-        <div class="filter-range">
-          <select name="sweetness_min" class="filter-narrow">
-            <option value="">Min</option>
-            {% for i in range(1, 6) %}
-            <option value="{{ i }}" {% if filters.sweetness_min|string == i|string %}selected{% endif %}>{{ i }}</option>
-            {% endfor %}
-          </select>
-          <span class="range-dash">—</span>
-          <select name="sweetness_max" class="filter-narrow">
-            <option value="">Max</option>
-            {% for i in range(1, 6) %}
-            <option value="{{ i }}" {% if filters.sweetness_max|string == i|string %}selected{% endif %}>{{ i }}</option>
-            {% endfor %}
-          </select>
-        </div>
-      </label>
-
-      <label>
-        Cuerpo
-        <div class="filter-range">
-          <select name="body_min" class="filter-narrow">
-            <option value="">Min</option>
-            {% for i in range(1, 6) %}
-            <option value="{{ i }}" {% if filters.body_min|string == i|string %}selected{% endif %}>{{ i }}</option>
-            {% endfor %}
-          </select>
-          <span class="range-dash">—</span>
-          <select name="body_max" class="filter-narrow">
-            <option value="">Max</option>
-            {% for i in range(1, 6) %}
-            <option value="{{ i }}" {% if filters.body_max|string == i|string %}selected{% endif %}>{{ i }}</option>
-            {% endfor %}
-          </select>
-        </div>
-      </label>
+      <button
+        type="button"
+        class="filter-toggle-btn {% if filters.variety or filters.brew_method or filters.tasting_note or filters.acidity_min or filters.acidity_max or filters.sweetness_min or filters.sweetness_max or filters.body_min or filters.body_max %}is-active{% endif %}"
+        onclick="toggleAdvanced()"
+        id="filter-toggle"
+      >
+        <span class="filter-toggle-icon">+</span>
+        Más filtros
+      </button>
 
     </div>
+
+    {# ── Advanced filter panel (hidden by default, slides open) ── #}
+    <div class="filter-advanced" id="filter-advanced">
+      <div class="filter-advanced-grid">
+
+        <label>
+          Variedad
+          <select name="variety">
+            <option value="">Todos</option>
+            {% for v in varieties %}
+            <option value="{{ v }}" {% if filters.variety == v %}selected{% endif %}>{{ v }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label>
+          Método
+          <select name="brew_method">
+            <option value="">Todos</option>
+            {% for m in brew_methods_options %}
+            <option value="{{ m }}" {% if filters.brew_method == m %}selected{% endif %}>{{ m }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label>
+          Notas de cata
+          <select name="tasting_note">
+            <option value="">Todos</option>
+            {% for n in tasting_notes_options %}
+            <option value="{{ n }}" {% if filters.tasting_note == n %}selected{% endif %}>{{ n }}</option>
+            {% endfor %}
+          </select>
+        </label>
+
+        <label>
+          Acidez
+          <div class="filter-range">
+            <select name="acidity_min" class="filter-narrow">
+              <option value="">Min</option>
+              {% for i in range(1, 6) %}
+              <option value="{{ i }}" {% if filters.acidity_min|string == i|string %}selected{% endif %}>{{ i }}</option>
+              {% endfor %}
+            </select>
+            <span class="range-dash">—</span>
+            <select name="acidity_max" class="filter-narrow">
+              <option value="">Max</option>
+              {% for i in range(1, 6) %}
+              <option value="{{ i }}" {% if filters.acidity_max|string == i|string %}selected{% endif %}>{{ i }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </label>
+
+        <label>
+          Dulzor
+          <div class="filter-range">
+            <select name="sweetness_min" class="filter-narrow">
+              <option value="">Min</option>
+              {% for i in range(1, 6) %}
+              <option value="{{ i }}" {% if filters.sweetness_min|string == i|string %}selected{% endif %}>{{ i }}</option>
+              {% endfor %}
+            </select>
+            <span class="range-dash">—</span>
+            <select name="sweetness_max" class="filter-narrow">
+              <option value="">Max</option>
+              {% for i in range(1, 6) %}
+              <option value="{{ i }}" {% if filters.sweetness_max|string == i|string %}selected{% endif %}>{{ i }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </label>
+
+        <label>
+          Cuerpo
+          <div class="filter-range">
+            <select name="body_min" class="filter-narrow">
+              <option value="">Min</option>
+              {% for i in range(1, 6) %}
+              <option value="{{ i }}" {% if filters.body_min|string == i|string %}selected{% endif %}>{{ i }}</option>
+              {% endfor %}
+            </select>
+            <span class="range-dash">—</span>
+            <select name="body_max" class="filter-narrow">
+              <option value="">Max</option>
+              {% for i in range(1, 6) %}
+              <option value="{{ i }}" {% if filters.body_max|string == i|string %}selected{% endif %}>{{ i }}</option>
+              {% endfor %}
+            </select>
+          </div>
+        </label>
+
+      </div>
+    </div>
+
   </form>
 </section>
 
 <div id="results">
   {% include "coffee_cards.html" %}
 </div>
+
+<script>
+  // Toggle advanced filter panel
+  function toggleAdvanced() {
+    var panel = document.getElementById('filter-advanced');
+    var btn = document.getElementById('filter-toggle');
+    panel.classList.toggle('is-open');
+    btn.classList.toggle('is-active');
+  }
+
+  // Auto-open advanced panel if any advanced filter has a value on page load
+  (function() {
+    var advancedFields = ['variety', 'brew_method', 'tasting_note',
+                          'acidity_min', 'acidity_max', 'sweetness_min',
+                          'sweetness_max', 'body_min', 'body_max'];
+    var form = document.getElementById('filter-form');
+    if (!form) return;
+    var hasAdvanced = advancedFields.some(function(name) {
+      var el = form.querySelector('[name="' + name + '"]');
+      return el && el.value;
+    });
+    if (hasAdvanced) {
+      document.getElementById('filter-advanced').classList.add('is-open');
+      document.getElementById('filter-toggle').classList.add('is-active');
+    }
+  })();
+</script>
 {% endblock %}

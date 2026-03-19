@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Google Kofe — Cafés de especialidad de Argentina</title>
+  <title>Koffe — Cafés de especialidad de Argentina</title>
   <!-- Apply saved theme before render to avoid a flash of wrong colors -->
   <script>
     (function(){
@@ -11,6 +11,10 @@
       document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
+  <!-- Google Fonts: Fraunces (display) + Outfit (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body class="landing-body">
@@ -42,15 +46,17 @@
         </svg>
       </button>
       <a class="hero-github" href="https://github.com/brunoamaral/koffe" target="_blank" rel="noopener">
-        GitHub ↗
+        GitHub
       </a>
     </div>
 
     <!-- Upper-left content -->
     <div class="hero-content">
-      <h1 class="hero-title">Google Kofe</h1>
+      <h1 class="hero-title">Koffe</h1>
       <p class="hero-tagline">Cafés de especialidad<br>de Argentina</p>
-      <a class="btn-cta" href="/explorar">Encontrá tu café →</a>
+      <a class="btn-cta" href="/explorar">
+        Explorar cafés <span class="cta-arrow">&rarr;</span>
+      </a>
     </div>
   </section>
 

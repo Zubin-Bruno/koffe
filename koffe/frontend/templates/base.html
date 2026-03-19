@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}Google Kofe{% endblock %}</title>
+  <title>{% block title %}Koffe{% endblock %}</title>
   <!-- Apply saved theme before render to avoid a flash of wrong colors -->
   <script>
     (function(){
@@ -11,15 +11,18 @@
       document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
+  <!-- Google Fonts: Fraunces (display) + Outfit (body) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
   <script src="/static/htmx.min.js"></script>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
   <header>
-    <a href="/" class="logo">Google Kofe</a>
-    <p class="tagline">Cafés de especialidad — Argentina</p>
+    <a href="/" class="logo">Koffe</a>
     <nav class="header-nav">
-      <a href="/explorar">Explorar →</a>
+      <a href="/explorar">Explorar</a>
     </nav>
     <!-- Theme toggle: dark roasted bean = dark mode, light roasted bean = light mode -->
     <button class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema">
@@ -104,7 +107,7 @@
         'left:' + rect.left + 'px;' +
         'width:' + rect.width + 'px;' +
         'height:' + rect.height + 'px;' +
-        'overflow:hidden;opacity:0.5;border-radius:0px;';
+        'overflow:hidden;opacity:0.5;border-radius:12px;';
 
       document.body.appendChild(overlay);
       activeOverlay = overlay;

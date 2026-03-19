@@ -1,8 +1,20 @@
+{% if not has_filters %}
+{# ── Welcome state: no filters active yet ── #}
+<div class="welcome-state">
+  <svg class="welcome-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-hidden="true">
+    <ellipse cx="32" cy="32" rx="14" ry="22" fill="currentColor" opacity="0.15"/>
+    <path d="M32 10C26 16 26 24 32 32s6 16 0 22" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.3"/>
+  </svg>
+  <h2 class="welcome-title">Encontrá tu café ideal</h2>
+  <p class="welcome-subtitle">Usá los filtros de arriba para explorar los cafés de especialidad disponibles.</p>
+</div>
+{% elif coffees %}
+{# ── Results found ── #}
 <p class="results-count">{{ total }} café{{ 's' if total != 1 else '' }} encontrado{{ 's' if total != 1 else '' }}</p>
 
 <div class="card-grid">
 {% for coffee in coffees %}
-  <div class="card-wrapper {% if not coffee.is_available %}card--unavailable{% endif %}">
+  <div class="card-wrapper {% if not coffee.is_available %}card--unavailable{% endif %}" style="--i: {{ loop.index0 }}">
 
     {# ── Front face (stays in grid) ── #}
     <div class="card-front-face">
@@ -144,7 +156,11 @@
     </div>
 
   </div>
-{% else %}
-  <p class="empty-state">No se encontraron cafés con esos filtros.</p>
 {% endfor %}
 </div>
+{% else %}
+{# ── No results for active filters ── #}
+<div class="empty-state">
+  <p>No se encontraron cafés con esos filtros.</p>
+</div>
+{% endif %}
