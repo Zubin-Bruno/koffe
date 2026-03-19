@@ -1,23 +1,14 @@
-{% extends "base.html" %}
-{% block title %}Koffe — Explorar cafés{% endblock %}
+{# Compare slot: filter form + card grid (one slot of the comparison overlay) #}
+<div class="compare-slot-content" id="compare-slot-{{ slot }}">
 
-{% block content %}
-<div class="explorer-header">
-  <h1>Explorar</h1>
-  <p class="explorer-subtitle">{{ total_available }} café{{ 's' if total_available != 1 else '' }} disponible{{ 's' if total_available != 1 else '' }}</p>
-</div>
+  <form class="compare-filter-form"
+        hx-get="/coffees/compare-search"
+        hx-target="#compare-slot-{{ slot }}"
+        hx-trigger="change, submit"
+        hx-swap="innerHTML">
+    <input type="hidden" name="slot" value="{{ slot }}" />
 
-<section class="filters">
-  <form
-    hx-get="/coffees"
-    hx-target="#results"
-    hx-trigger="change, submit"
-    hx-push-url="true"
-    id="filter-form"
-  >
-    {# ── Primary filter bar (always visible) ── #}
-    <div class="filter-bar">
-
+    <div class="compare-filter-bar">
       <label>
         Tostador
         <select name="roaster_id">
@@ -48,41 +39,25 @@
         </select>
       </label>
 
-      <label class="filter-search">
+      <label class="compare-filter-search">
         Buscar
-        <input
-          type="text"
-          name="search"
-          placeholder="Nombre, notas..."
-          value="{{ filters.search }}"
-          hx-get="/coffees"
-          hx-target="#results"
-          hx-trigger="input changed delay:400ms"
-          hx-include="#filter-form"
-          hx-push-url="true"
-        />
+        <input type="text" name="search" placeholder="Nombre, notas..."
+               value="{{ filters.search }}"
+               hx-get="/coffees/compare-search"
+               hx-target="#compare-slot-{{ slot }}"
+               hx-trigger="input changed delay:400ms"
+               hx-include="closest form"
+               hx-swap="innerHTML" />
       </label>
 
-      <button
-        type="button"
-        class="filter-toggle-btn {% if filters.variety or filters.brew_method or filters.tasting_note or filters.acidity_min or filters.acidity_max or filters.sweetness_min or filters.sweetness_max or filters.body_min or filters.body_max %}is-active{% endif %}"
-        onclick="toggleAdvanced()"
-        id="filter-toggle"
-      >
+      <button type="button" class="compare-more-btn" onclick="this.closest('form').querySelector('.compare-filter-advanced').classList.toggle('is-open'); this.classList.toggle('is-active');">
         <span class="filter-toggle-icon">+</span>
-        Más filtros
+        Más
       </button>
-
-      <button type="button" class="filter-toggle-btn" onclick="openCompare()">
-        Comparar
-      </button>
-
     </div>
 
-    {# ── Advanced filter panel (hidden by default, slides open) ── #}
-    <div class="filter-advanced" id="filter-advanced">
-      <div class="filter-advanced-grid">
-
+    <div class="compare-filter-advanced">
+      <div class="compare-filter-advanced-grid">
         <label>
           Variedad
           <select name="variety">
@@ -104,7 +79,7 @@
         </label>
 
         <label>
-          Notas de cata
+          Notas
           <select name="tasting_note">
             <option value="">Todos</option>
             {% for n in tasting_notes_options %}
@@ -169,41 +144,56 @@
             </select>
           </div>
         </label>
-
       </div>
     </div>
-
   </form>
-</section>
 
-<div id="results">
-  {% include "coffee_cards.html" %}
+  <div class="compare-results">
+    {% if not has_filters %}
+    <div class="compare-welcome">
+      <p>Usá los filtros para buscar un café</p>
+    </div>
+    {% elif coffees %}
+    <p class="compare-results-count">{{ total }} resultado{{ 's' if total != 1 else '' }}</p>
+    <div class="compare-card-grid">
+      {% for coffee in coffees %}
+      <div class="compare-card"
+           hx-get="/coffees/{{ coffee.id }}/compare-detail?slot={{ slot }}"
+           hx-target="#compare-slot-{{ slot }}"
+           hx-swap="outerHTML">
+        <div class="compare-card-image">
+          <img src="{{ coffee.image_url or '/static/images/coffee-placeholder.svg' }}"
+               alt="{{ coffee.name }}" loading="lazy"
+               onerror="this.src='/static/images/coffee-placeholder.svg'" />
+        </div>
+        <div class="compare-card-body">
+          <h3 class="compare-card-name">{{ coffee.name }}</h3>
+          <p class="compare-card-roaster">{{ coffee.roaster_name or '' }}</p>
+          <div class="compare-card-tags">
+            {% if coffee.origin_country %}
+            <span class="tag tag--origin">{{ coffee.origin_country }}</span>
+            {% endif %}
+            {% if coffee.process %}
+            <span class="tag tag--process">{{ coffee.process }}</span>
+            {% endif %}
+          </div>
+          <div class="compare-card-footer">
+            <span class="compare-card-price">
+              {% if coffee.price_display %}{{ coffee.price_display }}{% else %}—{% endif %}
+            </span>
+            {% if coffee.weight_grams %}
+            <span class="compare-card-weight">{{ coffee.weight_grams }}g</span>
+            {% endif %}
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="compare-empty">
+      <p>No se encontraron cafés con esos filtros.</p>
+    </div>
+    {% endif %}
+  </div>
+
 </div>
-
-<script>
-  // Toggle advanced filter panel
-  function toggleAdvanced() {
-    var panel = document.getElementById('filter-advanced');
-    var btn = document.getElementById('filter-toggle');
-    panel.classList.toggle('is-open');
-    btn.classList.toggle('is-active');
-  }
-
-  // Auto-open advanced panel if any advanced filter has a value on page load
-  (function() {
-    var advancedFields = ['variety', 'brew_method', 'tasting_note',
-                          'acidity_min', 'acidity_max', 'sweetness_min',
-                          'sweetness_max', 'body_min', 'body_max'];
-    var form = document.getElementById('filter-form');
-    if (!form) return;
-    var hasAdvanced = advancedFields.some(function(name) {
-      var el = form.querySelector('[name="' + name + '"]');
-      return el && el.value;
-    });
-    if (hasAdvanced) {
-      document.getElementById('filter-advanced').classList.add('is-open');
-      document.getElementById('filter-toggle').classList.add('is-active');
-    }
-  })();
-</script>
-{% endblock %}

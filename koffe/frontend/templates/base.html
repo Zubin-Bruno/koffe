@@ -170,6 +170,7 @@
     // Event delegation: works after HTMX partial reloads
     document.addEventListener('click', function (e) {
       if (activeOverlay) return;
+      if (e.target.closest('.compare-overlay')) return;
       var wrapper = e.target.closest('.card-wrapper');
       if (!wrapper) return;
       if (e.target.closest('a') || e.target.closest('button')) return;
@@ -185,6 +186,146 @@
     document.body.addEventListener('htmx:responseError', function (e) {
       console.error('HTMX error:', e.detail.xhr.status, e.detail.xhr.responseText);
     });
+  })();
+  </script>
+  <script>
+  // ── Comparison overlay ───────────────────────────────────────
+  (function () {
+    'use strict';
+    var compareOverlay = null;
+    var compareBackdrop = null;
+
+    function isMobile() { return window.innerWidth <= 600; }
+
+    function openCompare(prefillCoffeeId) {
+      if (compareOverlay) return;
+
+      // Close any open expanded panel first
+      var existingExpanded = document.querySelector('.exp-panel-overlay.is-expanded');
+      if (existingExpanded) {
+        var closeBtn = existingExpanded.querySelector('.exp-close');
+        if (closeBtn) closeBtn.click();
+      }
+
+      // Backdrop (reuse same class as card expand)
+      var bd = document.createElement('div');
+      bd.className = 'card-backdrop';
+      document.body.appendChild(bd);
+      requestAnimationFrame(function () { bd.classList.add('is-visible'); });
+      bd.addEventListener('click', closeCompare);
+      compareBackdrop = bd;
+
+      // Build overlay structure
+      var overlay = document.createElement('div');
+      overlay.className = 'compare-overlay';
+
+      // Header
+      var header = document.createElement('div');
+      header.className = 'compare-header';
+      header.innerHTML = '<h2>Comparar cafes</h2>';
+      var closeBtn = document.createElement('button');
+      closeBtn.className = 'compare-close';
+      closeBtn.setAttribute('aria-label', 'Cerrar');
+      closeBtn.textContent = '\u2715';
+      closeBtn.addEventListener('click', closeCompare);
+      header.appendChild(closeBtn);
+      overlay.appendChild(header);
+
+      // Mobile tabs
+      var tabs = document.createElement('div');
+      tabs.className = 'compare-tabs';
+      for (var t = 0; t < 2; t++) {
+        var tabBtn = document.createElement('button');
+        tabBtn.className = 'compare-tab-btn' + (t === 0 ? ' is-active' : '');
+        tabBtn.textContent = 'Cafe ' + (t + 1);
+        tabBtn.setAttribute('data-tab', t);
+        tabBtn.addEventListener('click', (function (idx) {
+          return function () { switchTab(idx); };
+        })(t));
+        tabs.appendChild(tabBtn);
+      }
+      overlay.appendChild(tabs);
+
+      // Slots container
+      var slotsContainer = document.createElement('div');
+      slotsContainer.className = 'compare-slots';
+
+      for (var s = 0; s < 2; s++) {
+        var slot = document.createElement('div');
+        slot.className = 'compare-slot' + (s === 0 ? ' is-active-tab' : '');
+        slot.setAttribute('data-slot', s);
+
+        // Decide what to load in this slot
+        var url;
+        if (prefillCoffeeId && s === 0) {
+          url = '/coffees/' + prefillCoffeeId + '/compare-detail?slot=0';
+        } else {
+          url = '/coffees/compare-search?slot=' + s;
+        }
+
+        slot.setAttribute('hx-get', url);
+        slot.setAttribute('hx-trigger', 'load');
+        slot.setAttribute('hx-swap', 'innerHTML');
+        slotsContainer.appendChild(slot);
+      }
+
+      overlay.appendChild(slotsContainer);
+      document.body.appendChild(overlay);
+      compareOverlay = overlay;
+      document.body.classList.add('card-expanded-open');
+
+      // Let HTMX process the new elements (triggers hx-trigger="load")
+      htmx.process(overlay);
+
+      // Animate in via double rAF
+      requestAnimationFrame(function () {
+        requestAnimationFrame(function () {
+          overlay.classList.add('is-open');
+        });
+      });
+    }
+
+    function closeCompare() {
+      if (!compareOverlay) return;
+      var overlay = compareOverlay;
+      var backdrop = compareBackdrop;
+      compareOverlay = null;
+      compareBackdrop = null;
+
+      if (backdrop) backdrop.classList.remove('is-visible');
+      overlay.classList.remove('is-open');
+      overlay.classList.add('is-closing');
+
+      var cleaned = false;
+      function cleanup() {
+        if (cleaned) return; cleaned = true;
+        if (overlay.parentNode) overlay.parentNode.removeChild(overlay);
+        if (backdrop && backdrop.parentNode) backdrop.parentNode.removeChild(backdrop);
+        document.body.classList.remove('card-expanded-open');
+      }
+      overlay.addEventListener('transitionend', cleanup, { once: true });
+      setTimeout(cleanup, 500);
+    }
+
+    function switchTab(slotIndex) {
+      if (!compareOverlay) return;
+      var tabBtns = compareOverlay.querySelectorAll('.compare-tab-btn');
+      var slots = compareOverlay.querySelectorAll('.compare-slot');
+      tabBtns.forEach(function (btn, i) {
+        btn.classList.toggle('is-active', i === slotIndex);
+      });
+      slots.forEach(function (slot, i) {
+        slot.classList.toggle('is-active-tab', i === slotIndex);
+      });
+    }
+
+    // Close on Escape
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && compareOverlay) closeCompare();
+    });
+
+    // Expose globally so buttons can call it
+    window.openCompare = openCompare;
   })();
   </script>
 </body>

@@ -98,6 +98,36 @@ def _apply_filters(q, origin, process, roaster_id_int, acidity_min_int,
     return q
 
 
+def _get_filter_options(db: Session) -> dict:
+    """Load all dropdown options for the filter UI from the DB.
+
+    Returns a dict with keys: roasters, origins, processes, varieties,
+    brew_methods_options, tasting_notes_options.  Used by the explorer page
+    and by the comparison search partial so the same dropdowns appear in both.
+    """
+    roasters = db.query(Roaster).filter(Roaster.is_active == True).all()
+    all_origins = sorted([r[0] for r in db.query(Coffee.origin_country).distinct() if r[0]])
+    all_processes = sorted([r[0] for r in db.query(Coffee.process).distinct() if r[0]])
+    all_varieties = sorted([r[0] for r in db.query(Coffee.variety).distinct() if r[0]])
+
+    rows = db.query(Coffee.brew_methods, Coffee.attributes).all()
+    brew_set, note_set = set(), set()
+    for bm, attrs in rows:
+        if bm:
+            brew_set.update(bm)
+        if attrs and "tasting_notes" in attrs:
+            note_set.update(attrs["tasting_notes"])
+
+    return {
+        "roasters": roasters,
+        "origins": all_origins,
+        "processes": all_processes,
+        "varieties": all_varieties,
+        "brew_methods_options": sorted(brew_set),
+        "tasting_notes_options": sorted(note_set),
+    }
+
+
 @router.get("/api/coffees", tags=["coffees"])
 def list_coffees(
     roaster_id: str | None = Query(None),
@@ -241,23 +271,7 @@ async def index(
     else:
         coffees = []
 
-    roasters = db.query(Roaster).filter(Roaster.is_active == True).all()
-
-    # Get distinct filter options from DB
-    all_origins = [r[0] for r in db.query(Coffee.origin_country).distinct() if r[0]]
-    all_processes = [r[0] for r in db.query(Coffee.process).distinct() if r[0]]
-    all_varieties = sorted([r[0] for r in db.query(Coffee.variety).distinct() if r[0]])
-
-    # brew_methods and tasting_notes are JSON lists — flatten them in Python
-    rows = db.query(Coffee.brew_methods, Coffee.attributes).all()
-    brew_set, note_set = set(), set()
-    for bm, attrs in rows:
-        if bm:
-            brew_set.update(bm)
-        if attrs and "tasting_notes" in attrs:
-            note_set.update(attrs["tasting_notes"])
-    all_brew_methods = sorted(brew_set)
-    all_tasting_notes = sorted(note_set)
+    opts = _get_filter_options(db)
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
@@ -265,12 +279,7 @@ async def index(
         {
             "request": request,
             "coffees": [_coffee_to_dict(c) for c in coffees],
-            "roasters": roasters,
-            "origins": sorted(all_origins),
-            "processes": sorted(all_processes),
-            "varieties": all_varieties,
-            "brew_methods_options": all_brew_methods,
-            "tasting_notes_options": all_tasting_notes,
+            **opts,
             "filters": {
                 "origin": origin or "",
                 "process": process or "",
@@ -346,4 +355,100 @@ async def coffees_partial(
             "total": len(coffees),
             "has_filters": has_filters,
         },
+    )
+
+
+@router.get("/coffees/compare-search", response_class=HTMLResponse, include_in_schema=False)
+async def compare_search(
+    request: Request,
+    slot: str = Query("0"),
+    origin: str | None = None,
+    process: str | None = None,
+    roaster_id: str | None = None,
+    acidity_min: str | None = None,
+    acidity_max: str | None = None,
+    sweetness_min: str | None = None,
+    sweetness_max: str | None = None,
+    body_min: str | None = None,
+    body_max: str | None = None,
+    variety: str | None = None,
+    brew_method: str | None = None,
+    tasting_note: str | None = None,
+    search: str | None = None,
+    db: Session = Depends(get_db),
+):
+    """HTMX partial — filter form + card grid for one comparison slot."""
+    roaster_id_int = _parse_int(roaster_id)
+    acidity_min_int = _parse_int(acidity_min)
+    acidity_max_int = _parse_int(acidity_max)
+    sweetness_min_int = _parse_int(sweetness_min)
+    sweetness_max_int = _parse_int(sweetness_max)
+    body_min_int = _parse_int(body_min)
+    body_max_int = _parse_int(body_max)
+
+    has_filters = _has_any_filter(
+        origin, process, roaster_id_int, variety, brew_method,
+        tasting_note, acidity_min_int, acidity_max_int, sweetness_min_int,
+        sweetness_max_int, body_min_int, body_max_int, search,
+    )
+
+    if has_filters:
+        q = db.query(Coffee).filter(Coffee.is_available == True)
+        q = _apply_filters(q, origin, process, roaster_id_int,
+                           acidity_min_int, acidity_max_int,
+                           sweetness_min_int, sweetness_max_int,
+                           body_min_int, body_max_int,
+                           variety, brew_method, tasting_note, search)
+        coffees = q.order_by(Coffee.name).limit(100).all()
+    else:
+        coffees = []
+
+    opts = _get_filter_options(db)
+    templates = request.app.state.templates
+    return templates.TemplateResponse(
+        "compare_search.html",
+        {
+            "request": request,
+            "slot": slot,
+            "coffees": [_coffee_to_dict(c) for c in coffees],
+            "total": len(coffees),
+            "has_filters": has_filters,
+            "filters": {
+                "origin": origin or "",
+                "process": process or "",
+                "roaster_id": roaster_id_int or "",
+                "acidity_min": acidity_min_int or "",
+                "acidity_max": acidity_max_int or "",
+                "sweetness_min": sweetness_min_int or "",
+                "sweetness_max": sweetness_max_int or "",
+                "body_min": body_min_int or "",
+                "body_max": body_max_int or "",
+                "variety": variety or "",
+                "brew_method": brew_method or "",
+                "tasting_note": tasting_note or "",
+                "search": search or "",
+            },
+            **opts,
+        },
+    )
+
+
+@router.get("/coffees/{coffee_id}/compare-detail", response_class=HTMLResponse, include_in_schema=False)
+async def compare_detail(
+    coffee_id: int,
+    request: Request,
+    slot: str = Query("0"),
+    db: Session = Depends(get_db),
+):
+    """HTMX partial — selected coffee detail inside a comparison slot."""
+    from fastapi import HTTPException
+
+    coffee = db.query(Coffee).filter(Coffee.id == coffee_id).first()
+    if not coffee:
+        raise HTTPException(status_code=404, detail="Coffee not found")
+
+    templates = request.app.state.templates
+    return templates.TemplateResponse(
+        "compare_detail.html",
+        {"request": request, "coffee": _coffee_to_dict(coffee), "slot": slot},
     )

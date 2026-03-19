@@ -147,6 +147,9 @@
             <span class="exp-weight">· {{ coffee.weight_grams }}g</span>
             {% endif %}
           </div>
+          <button class="exp-compare-btn" onclick="event.stopPropagation(); openCompare({{ coffee.id }})">
+            Comparar
+          </button>
           <a class="exp-buy-btn" href="{{ coffee.url }}" target="_blank" rel="noopener">
             Ver en tienda →
           </a>
