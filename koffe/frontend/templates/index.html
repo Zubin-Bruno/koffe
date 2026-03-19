@@ -43,6 +43,36 @@
       </label>
 
       <label>
+        Variedad
+        <select name="variety">
+          <option value="">Todos</option>
+          {% for v in varieties %}
+          <option value="{{ v }}" {% if filters.variety == v %}selected{% endif %}>{{ v }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        Método
+        <select name="brew_method">
+          <option value="">Todos</option>
+          {% for m in brew_methods_options %}
+          <option value="{{ m }}" {% if filters.brew_method == m %}selected{% endif %}>{{ m }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
+        Notas de cata
+        <select name="tasting_note">
+          <option value="">Todos</option>
+          {% for n in tasting_notes_options %}
+          <option value="{{ n }}" {% if filters.tasting_note == n %}selected{% endif %}>{{ n }}</option>
+          {% endfor %}
+        </select>
+      </label>
+
+      <label>
         Acidez
         <div class="filter-range">
           <select name="acidity_min" class="filter-narrow">
@@ -97,12 +127,6 @@
             {% endfor %}
           </select>
         </div>
-      </label>
-
-      <label class="checkbox-label">
-        <input type="checkbox" name="available_only" value="true"
-          {% if filters.available_only %}checked{% endif %} />
-        Solo disponibles
       </label>
 
     </div>

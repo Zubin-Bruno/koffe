@@ -29,7 +29,7 @@
         </div>
         <div class="card-footer">
           <span class="card-price">
-            {% if coffee.price_display %}{{ coffee.price_display }} {{ coffee.currency }}{% else %}—{% endif %}
+            {% if coffee.price_display %}{{ coffee.price_display }}{% else %}—{% endif %}
           </span>
           {% if coffee.weight_grams %}
           <span class="card-weight">{{ coffee.weight_grams }}g</span>
@@ -129,7 +129,7 @@
         <div class="exp-footer">
           <div class="exp-price-block">
             <span class="exp-price">
-              {% if coffee.price_display %}{{ coffee.price_display }} {{ coffee.currency }}{% else %}—{% endif %}
+              {% if coffee.price_display %}{{ coffee.price_display }}{% else %}—{% endif %}
             </span>
             {% if coffee.weight_grams %}
             <span class="exp-weight">· {{ coffee.weight_grams }}g</span>

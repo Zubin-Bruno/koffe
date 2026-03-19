@@ -157,7 +157,9 @@ async def index(
     sweetness_max: str | None = None,
     body_min: str | None = None,
     body_max: str | None = None,
-    available_only: str | None = None,
+    variety: str | None = None,
+    brew_method: str | None = None,
+    tasting_note: str | None = None,
     db: Session = Depends(get_db),
 ):
     roaster_id_int = _parse_int(roaster_id)
@@ -169,8 +171,7 @@ async def index(
     body_max_int = _parse_int(body_max)
 
     q = db.query(Coffee)
-    if available_only is None or available_only == "true":
-        q = q.filter(Coffee.is_available == True)
+    q = q.filter(Coffee.is_available == True)
     if origin:
         q = q.filter(Coffee.origin_country.ilike(f"%{origin}%"))
     if process:
@@ -189,6 +190,14 @@ async def index(
         q = q.filter(Coffee.body >= body_min_int)
     if body_max_int:
         q = q.filter(Coffee.body <= body_max_int)
+    if variety:
+        q = q.filter(Coffee.variety.ilike(f"%{variety}%"))
+    if brew_method:
+        from sqlalchemy import cast, String
+        q = q.filter(cast(Coffee.brew_methods, String).ilike(f"%{brew_method}%"))
+    if tasting_note:
+        from sqlalchemy import cast, String
+        q = q.filter(cast(Coffee.attributes, String).ilike(f"%{tasting_note}%"))
 
     coffees = q.order_by(Coffee.name).limit(200).all()
     roasters = db.query(Roaster).filter(Roaster.is_active == True).all()
@@ -196,6 +205,18 @@ async def index(
     # Get distinct filter options from DB
     all_origins = [r[0] for r in db.query(Coffee.origin_country).distinct() if r[0]]
     all_processes = [r[0] for r in db.query(Coffee.process).distinct() if r[0]]
+    all_varieties = sorted([r[0] for r in db.query(Coffee.variety).distinct() if r[0]])
+
+    # brew_methods and tasting_notes are JSON lists — flatten them in Python
+    rows = db.query(Coffee.brew_methods, Coffee.attributes).all()
+    brew_set, note_set = set(), set()
+    for bm, attrs in rows:
+        if bm:
+            brew_set.update(bm)
+        if attrs and "tasting_notes" in attrs:
+            note_set.update(attrs["tasting_notes"])
+    all_brew_methods = sorted(brew_set)
+    all_tasting_notes = sorted(note_set)
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
@@ -206,6 +227,9 @@ async def index(
             "roasters": roasters,
             "origins": sorted(all_origins),
             "processes": sorted(all_processes),
+            "varieties": all_varieties,
+            "brew_methods_options": all_brew_methods,
+            "tasting_notes_options": all_tasting_notes,
             "filters": {
                 "origin": origin or "",
                 "process": process or "",
@@ -216,7 +240,9 @@ async def index(
                 "sweetness_max": sweetness_max_int or "",
                 "body_min": body_min_int or "",
                 "body_max": body_max_int or "",
-                "available_only": available_only is None or available_only == "true",
+                "variety": variety or "",
+                "brew_method": brew_method or "",
+                "tasting_note": tasting_note or "",
             },
             "total": len(coffees),
         },
@@ -235,7 +261,9 @@ async def coffees_partial(
     sweetness_max: str | None = None,
     body_min: str | None = None,
     body_max: str | None = None,
-    available_only: str | None = None,
+    variety: str | None = None,
+    brew_method: str | None = None,
+    tasting_note: str | None = None,
     db: Session = Depends(get_db),
 ):
     """HTMX partial — returns only the coffee card grid."""
@@ -248,8 +276,7 @@ async def coffees_partial(
     body_max_int = _parse_int(body_max)
 
     q = db.query(Coffee)
-    if available_only is None or available_only == "true":
-        q = q.filter(Coffee.is_available == True)
+    q = q.filter(Coffee.is_available == True)
     if origin:
         q = q.filter(Coffee.origin_country.ilike(f"%{origin}%"))
     if process:
@@ -268,6 +295,14 @@ async def coffees_partial(
         q = q.filter(Coffee.body >= body_min_int)
     if body_max_int:
         q = q.filter(Coffee.body <= body_max_int)
+    if variety:
+        q = q.filter(Coffee.variety.ilike(f"%{variety}%"))
+    if brew_method:
+        from sqlalchemy import cast, String
+        q = q.filter(cast(Coffee.brew_methods, String).ilike(f"%{brew_method}%"))
+    if tasting_note:
+        from sqlalchemy import cast, String
+        q = q.filter(cast(Coffee.attributes, String).ilike(f"%{tasting_note}%"))
 
     coffees = q.order_by(Coffee.name).limit(200).all()
 
