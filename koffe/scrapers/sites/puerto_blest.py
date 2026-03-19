@@ -209,7 +209,7 @@ class PuertoBlestScraper(BaseScraper):
         altitude_masl = self._extract_altitude(page_text)
 
         # Tasting notes from description
-        tasting_notes = self._extract_tasting_notes(page_text)
+        tasting_notes = self._extract_tasting_notes(tree)
         attributes = {}
         if tasting_notes:
             attributes["tasting_notes"] = tasting_notes
@@ -310,14 +310,15 @@ class PuertoBlestScraper(BaseScraper):
             return int(match.group(1))
         return None
 
-    def _extract_tasting_notes(self, text: str) -> list[str] | None:
-        match = re.search(
-            r"(?:notas?|notes?|perfil)[:\s]+(.+?)(?:tostado|cosecha|recolecci[oó]n|secado|presentaci[oó]n|beneficio|proceso|varietal|variedad|altura|finca|origen|regi[oó]n|tueste|acidez|dulzura|cuerpo|\n|\r|$)",
-            text,
-            re.IGNORECASE,
-        )
-        if match:
-            raw = match.group(1).strip()
-            notes = [n.strip() for n in re.split(r"[,/y&+]", raw) if n.strip()]
-            return notes[:6] if notes else None
+    def _extract_tasting_notes(self, tree) -> list[str] | None:
+        for strong in tree.css("strong"):
+            if "organolépticas" in (strong.text() or "").lower():
+                parent = strong.parent
+                if parent:
+                    full = parent.text() or ""
+                    _, _, after = full.partition(":")
+                    raw = after.strip()
+                    if raw:
+                        notes = [n.strip() for n in re.split(r"[,/&+]|\s+y\s+", raw) if n.strip()]
+                        return notes[:6] if notes else None
         return None
