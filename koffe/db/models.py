@@ -1,3 +1,4 @@
+import json
 from datetime import datetime
 from typing import Any
 
@@ -12,7 +13,31 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from sqlalchemy.types import JSON
+from sqlalchemy.types import JSON, TypeDecorator
+
+
+class UnicodeJSON(TypeDecorator):
+    """JSON column that stores real UTF-8 characters instead of \\uXXXX escapes.
+
+    Python's json.dumps() defaults to ensure_ascii=True, which converts accented
+    characters like ú into \\u00fa.  SQLite stores that literally, so a filter
+    searching for "Azúcar" never matches "Az\\u00facar".
+
+    This type fixes the problem by serializing with ensure_ascii=False.
+    """
+
+    impl = Text
+    cache_ok = True
+
+    def process_bind_param(self, value, dialect):
+        if value is not None:
+            return json.dumps(value, ensure_ascii=False)
+        return value
+
+    def process_result_value(self, value, dialect):
+        if value is not None:
+            return json.loads(value)
+        return value
 
 
 class Base(DeclarativeBase):
@@ -62,8 +87,8 @@ class Coffee(Base):
     body: Mapped[float | None] = mapped_column(Float, index=True)      # 1–5
     variety: Mapped[str | None] = mapped_column(String)
     altitude_masl: Mapped[int | None] = mapped_column(Integer)
-    attributes: Mapped[dict[str, Any] | None] = mapped_column(JSON)
-    brew_methods: Mapped[list[str] | None] = mapped_column(JSON)
+    attributes: Mapped[dict[str, Any] | None] = mapped_column(UnicodeJSON)
+    brew_methods: Mapped[list[str] | None] = mapped_column(UnicodeJSON)
     first_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 

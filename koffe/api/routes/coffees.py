@@ -1,11 +1,23 @@
+import unicodedata
+
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
+from sqlalchemy import cast, String, or_, func
 from sqlalchemy.orm import Session
 
 from koffe.db.database import get_db
 from koffe.db.models import Coffee, Roaster
 
 router = APIRouter()
+
+
+def _strip_accents(text: str) -> str:
+    """Remove accent marks from text for accent-insensitive matching.
+
+    Example: 'Azúcar' → 'Azucar', 'café' → 'cafe'.
+    """
+    nfkd = unicodedata.normalize("NFKD", text)
+    return "".join(ch for ch in nfkd if unicodedata.category(ch) != "Mn")
 
 
 def _parse_int(val: str | None) -> int | None:
@@ -60,11 +72,18 @@ def _apply_filters(q, origin, process, roaster_id_int, acidity_min_int,
                    acidity_max_int, sweetness_min_int, sweetness_max_int,
                    body_min_int, body_max_int, variety, brew_method,
                    tasting_note, search=None):
-    """Apply all filter conditions to a query. Returns the filtered query."""
+    """Apply all filter conditions to a query. Returns the filtered query.
+
+    Text filters use func.strip_accents() (registered in database.py) so that
+    accented characters are ignored during matching — e.g. searching "azucar"
+    will match "Azúcar".
+    """
     if origin:
-        q = q.filter(Coffee.origin_country.ilike(f"%{origin}%"))
+        q = q.filter(func.strip_accents(Coffee.origin_country).ilike(
+            f"%{_strip_accents(origin)}%"))
     if process:
-        q = q.filter(Coffee.process.ilike(f"%{process}%"))
+        q = q.filter(func.strip_accents(Coffee.process).ilike(
+            f"%{_strip_accents(process)}%"))
     if roaster_id_int:
         q = q.filter(Coffee.roaster_id == roaster_id_int)
     if acidity_min_int:
@@ -80,20 +99,20 @@ def _apply_filters(q, origin, process, roaster_id_int, acidity_min_int,
     if body_max_int:
         q = q.filter(Coffee.body <= body_max_int)
     if variety:
-        q = q.filter(Coffee.variety.ilike(f"%{variety}%"))
+        q = q.filter(func.strip_accents(Coffee.variety).ilike(
+            f"%{_strip_accents(variety)}%"))
     if brew_method:
-        from sqlalchemy import cast, String
-        q = q.filter(cast(Coffee.brew_methods, String).ilike(f"%{brew_method}%"))
+        q = q.filter(func.strip_accents(cast(Coffee.brew_methods, String)).ilike(
+            f"%{_strip_accents(brew_method)}%"))
     if tasting_note:
-        from sqlalchemy import cast, String
-        q = q.filter(cast(Coffee.attributes, String).ilike(f"%{tasting_note}%"))
+        q = q.filter(func.strip_accents(cast(Coffee.attributes, String)).ilike(
+            f"%{_strip_accents(tasting_note)}%"))
     if search:
-        from sqlalchemy import cast, String, or_
-        search_term = f"%{search}%"
+        term = f"%{_strip_accents(search)}%"
         q = q.filter(or_(
-            Coffee.name.ilike(search_term),
-            Coffee.description.ilike(search_term),
-            cast(Coffee.attributes, String).ilike(search_term),
+            func.strip_accents(Coffee.name).ilike(term),
+            func.strip_accents(Coffee.description).ilike(term),
+            func.strip_accents(cast(Coffee.attributes, String)).ilike(term),
         ))
     return q
 
