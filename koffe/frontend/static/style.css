@@ -1349,7 +1349,7 @@ body.card-expanded-open { overflow: hidden; }
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  font-size: 0.78rem;
+  font-size: 0.88rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1357,14 +1357,14 @@ body.card-expanded-open { overflow: hidden; }
 }
 .compare-filter-bar select,
 .compare-filter-advanced select {
-  padding: 0.45rem 0.75rem;
+  padding: 0.5rem 0.85rem;
   border: none;
   border-bottom: 2px solid var(--border);
   border-radius: 0;
   background: transparent;
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   cursor: pointer;
   min-width: 120px;
   transition: border-color 0.15s;
@@ -1390,7 +1390,7 @@ body.card-expanded-open { overflow: hidden; }
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  font-size: 0.68rem;
+  font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1399,14 +1399,14 @@ body.card-expanded-open { overflow: hidden; }
   min-width: 100px;
 }
 .compare-filter-search input {
-  padding: 0.45rem 0.75rem;
+  padding: 0.5rem 0.85rem;
   border: none;
   border-bottom: 2px solid var(--border);
   border-radius: 0;
   background: transparent;
   color: var(--text);
   font-family: var(--font-body);
-  font-size: 0.88rem;
+  font-size: 0.95rem;
   transition: border-color 0.15s;
 }
 .compare-filter-search input:focus {
@@ -1429,7 +1429,7 @@ body.card-expanded-open { overflow: hidden; }
   background: transparent;
   color: var(--text-muted);
   font-family: var(--font-body);
-  font-size: 0.75rem;
+  font-size: 0.85rem;
   font-weight: 500;
   cursor: pointer;
   transition: border-color 0.15s, color 0.15s;
@@ -1477,7 +1477,7 @@ body.card-expanded-open { overflow: hidden; }
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
-  font-size: 0.68rem;
+  font-size: 0.82rem;
   font-weight: 600;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -1491,7 +1491,7 @@ body.card-expanded-open { overflow: hidden; }
 }
 .compare-results-count {
   color: var(--text-muted);
-  font-size: 0.78rem;
+  font-size: 0.88rem;
   margin-bottom: 0.5rem;
 }
 
@@ -1510,7 +1510,7 @@ body.card-expanded-open { overflow: hidden; }
 /* ── Compact card grid ──────────────────────────────────────── */
 .compare-card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
   gap: 1rem;
 }
 .compare-card {
@@ -1527,7 +1527,7 @@ body.card-expanded-open { overflow: hidden; }
   border-color: var(--accent);
 }
 .compare-card-image {
-  height: 140px;
+  height: 180px;
   overflow: hidden;
   background: var(--bg);
 }
@@ -1541,18 +1541,18 @@ body.card-expanded-open { overflow: hidden; }
   transform: scale(1.04);
 }
 .compare-card-body {
-  padding: 0.65rem 0.75rem;
+  padding: 0.75rem 0.85rem;
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
 }
 .compare-card-name {
-  font-size: 0.92rem;
+  font-size: 1.05rem;
   font-weight: 600;
   line-height: 1.25;
 }
 .compare-card-roaster {
-  font-size: 0.8rem;
+  font-size: 0.88rem;
   color: var(--text-muted);
 }
 .compare-card-tags {
@@ -1561,7 +1561,7 @@ body.card-expanded-open { overflow: hidden; }
   gap: 0.2rem;
 }
 .compare-card-tags .tag {
-  font-size: 0.72rem;
+  font-size: 0.78rem;
   padding: 0.1rem 0.35rem;
 }
 .compare-card-footer {
@@ -1573,11 +1573,11 @@ body.card-expanded-open { overflow: hidden; }
   border-top: 1px solid var(--border);
 }
 .compare-card-price {
-  font-size: 0.92rem;
+  font-size: 1rem;
   font-weight: 700;
 }
 .compare-card-weight {
-  font-size: 0.7rem;
+  font-size: 0.78rem;
   color: var(--text-muted);
 }
 
@@ -1611,12 +1611,12 @@ body.card-expanded-open { overflow: hidden; }
 }
 .compare-detail-top {
   display: grid;
-  grid-template-columns: 180px 1fr;
+  grid-template-columns: 210px 1fr;
   gap: 1rem;
   margin-bottom: 1rem;
 }
 .compare-detail-image {
-  width: 180px; height: 180px;
+  width: 210px; height: 210px;
   overflow: hidden;
   background: var(--bg);
   border-radius: var(--radius);
@@ -1632,7 +1632,7 @@ body.card-expanded-open { overflow: hidden; }
 }
 .compare-detail-name {
   font-family: var(--font-display);
-  font-size: 1.25rem;
+  font-size: 1.4rem;
   font-weight: 700;
   line-height: 1.25;
   letter-spacing: -0.02em;
