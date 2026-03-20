@@ -125,11 +125,11 @@ def _get_filter_options(db: Session) -> dict:
     and by the comparison search partial so the same dropdowns appear in both.
     """
     roasters = db.query(Roaster).filter(Roaster.is_active == True).all()
-    all_origins = sorted([r[0] for r in db.query(Coffee.origin_country).distinct() if r[0]])
-    all_processes = sorted([r[0] for r in db.query(Coffee.process).distinct() if r[0]])
-    all_varieties = sorted([r[0] for r in db.query(Coffee.variety).distinct() if r[0]])
+    all_origins = sorted([r[0] for r in db.query(Coffee.origin_country).filter(Coffee.is_available == True).distinct() if r[0]])
+    all_processes = sorted([r[0] for r in db.query(Coffee.process).filter(Coffee.is_available == True).distinct() if r[0]])
+    all_varieties = sorted([r[0] for r in db.query(Coffee.variety).filter(Coffee.is_available == True).distinct() if r[0]])
 
-    rows = db.query(Coffee.brew_methods, Coffee.attributes).all()
+    rows = db.query(Coffee.brew_methods, Coffee.attributes).filter(Coffee.is_available == True).all()
     brew_set, note_set = set(), set()
     for bm, attrs in rows:
         if bm:
