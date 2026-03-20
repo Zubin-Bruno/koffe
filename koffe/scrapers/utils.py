@@ -219,26 +219,18 @@ def normalize_brew_methods(raw: str | None) -> list[str] | None:
     return methods if methods else None
 
 
-def _spanish_title_case(text: str) -> str:
+def _sentence_case(text: str) -> str:
     """
-    Title-case for Spanish: capitalize first word + all non-prepositions.
-    Keeps short prepositions like 'de', 'con', 'del', 'en', 'a' lowercase
-    (unless they're the first word).
+    Sentence-case: capitalize only the first character, leave the rest as-is.
+    Input is already lowercased by step 6 of the pipeline.
 
     Examples:
-        "azúcar de caña"   → "Azúcar de Caña"
-        "fruta de hueso"   → "Fruta de Hueso"
-        "chocolate con leche" → "Chocolate con Leche"
+        "azúcar de caña"      → "Azúcar de caña"
+        "chocolate con leche" → "Chocolate con leche"
     """
-    LOWERCASE_WORDS = {"de", "del", "con", "en", "a", "al", "el", "la", "las", "los", "y"}
-    words = text.split()
-    result = []
-    for i, w in enumerate(words):
-        if i == 0 or w.lower() not in LOWERCASE_WORDS:
-            result.append(w.capitalize())
-        else:
-            result.append(w.lower())
-    return " ".join(result)
+    if not text:
+        return text
+    return text[0].upper() + text[1:]
 
 
 def normalize_tasting_notes(raw_notes: list[str] | None) -> list[str] | None:
@@ -352,7 +344,7 @@ def normalize_tasting_notes(raw_notes: list[str] | None) -> list[str] | None:
             continue
         if note.lower() in JUNK:
             continue
-        titled = _spanish_title_case(note)
+        titled = _sentence_case(note)
         key = titled.lower()
         if key not in seen:
             seen.add(key)

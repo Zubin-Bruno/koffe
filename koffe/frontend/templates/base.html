@@ -182,6 +182,13 @@
       if (e.key === 'Escape' && activeOverlay) closeExpanded();
     });
 
+    // Re-init notes dropdowns after HTMX swaps in new content
+    document.body.addEventListener('htmx:afterSwap', function (e) {
+      if (e.detail.target.querySelector && e.detail.target.querySelector('[data-notes-dropdown]')) {
+        if (typeof initNotesDropdowns === 'function') initNotesDropdowns();
+      }
+    });
+
     // Keep HTMX error logger
     document.body.addEventListener('htmx:responseError', function (e) {
       console.error('HTMX error:', e.detail.xhr.status, e.detail.xhr.responseText);
