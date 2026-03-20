@@ -30,11 +30,6 @@
   --shadow: 0 1px 3px rgba(0,0,0,0.3), 0 1px 2px rgba(0,0,0,0.2);
 }
 
-[data-theme="dark"] .tag--origin   { background: #1e3a5f; color: #93c5fd; }
-[data-theme="dark"] .tag--process  { background: #3a2e1a; color: #fcd34d; }
-[data-theme="dark"] .tag--roast    { background: #3a2e1a; color: #fcd34d; }
-[data-theme="dark"] .tag--brew     { background: #2e1a4a; color: #c4b5fd; }
-[data-theme="dark"] .tag--notes    { background: #3a1a2a; color: #fda4af; }
 [data-theme="dark"] .tag--sold-out { background: #3a1a1a; color: #fca5a5; }
 
 body {
@@ -443,20 +438,30 @@ main {
 
 .tag {
   font-size: 0.78rem;
-  font-weight: 600;
+  font-weight: 500;
   letter-spacing: 0.02em;
-  padding: 0.25rem 0.6rem;
-  border-radius: 99px;
-  background: var(--tag-bg);
   color: var(--text-muted);
 }
 
-.tag--origin   { background: #dbeafe; color: #1d4ed8; }
-.tag--process  { background: #fef3c7; color: #92400e; }
-.tag--roast    { background: #fef3c7; color: #92400e; }
-.tag--brew     { background: #ede9fe; color: #6d28d9; }
-.tag--notes    { background: #ffe4e6; color: #be123c; }
-.tag--sold-out { background: #fee2e2; color: #b91c1c; }
+.tag--origin,
+.tag--process,
+.tag--roast,
+.tag--brew,
+.tag--notes    { background: none; }
+
+/* Separator between plain-text tags */
+.card-tags .tag:not(.tag--sold-out) + .tag:not(.tag--sold-out)::before,
+.detail-tags .tag:not(.tag--sold-out) + .tag:not(.tag--sold-out)::before,
+.exp-notes-tags .tag + .tag::before,
+.exp-brew-tags .tag + .tag::before,
+.compare-card-tags .tag:not(.tag--sold-out) + .tag:not(.tag--sold-out)::before {
+  content: "·";
+  margin-right: 0.35rem;
+  color: var(--text-muted);
+  opacity: 0.5;
+}
+
+.tag--sold-out { background: #fee2e2; color: #b91c1c; padding: 0.25rem 0.6rem; border-radius: 99px; }
 
 /* ── Card body text ───────────────────────────────────────── */
 .card-description {
@@ -1562,7 +1567,6 @@ body.card-expanded-open { overflow: hidden; }
 }
 .compare-card-tags .tag {
   font-size: 0.82rem;
-  padding: 0.15rem 0.4rem;
 }
 .compare-card-footer {
   display: flex;
