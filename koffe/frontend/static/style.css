@@ -827,7 +827,8 @@ body.modal-open { overflow: hidden; }
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0,0,0,0.1);
   padding: 0.75rem;
-  columns: 3;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0;
   column-gap: 1rem;
   min-width: 400px;
   max-height: 300px;
@@ -835,19 +836,25 @@ body.modal-open { overflow: hidden; }
 }
 
 .notes-panel.is-open {
-  display: block;
+  display: grid;
 }
 
 .notes-item {
   padding: 0.35rem 0.5rem;
   cursor: pointer;
-  break-inside: avoid;
   border-radius: 4px;
   font-size: 0.9rem;
   font-weight: 400;
   text-transform: none;
   letter-spacing: 0;
   color: var(--text);
+}
+
+.notes-item:first-child {
+  grid-column: 1 / -1;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 0.25rem;
+  padding-bottom: 0.5rem;
 }
 
 .notes-item:hover {
@@ -900,7 +907,7 @@ body.modal-open { overflow: hidden; }
   .filter-range select { min-width: 48%; }
 
   .notes-panel {
-    columns: 2;
+    grid-template-columns: repeat(2, 1fr);
     min-width: 260px;
   }
   .notes-trigger { min-width: 100%; }
@@ -1838,7 +1845,7 @@ body.card-expanded-open { overflow: hidden; }
   }
 
   .compare-filter-advanced-grid .notes-panel {
-    columns: 2;
+    grid-template-columns: repeat(2, 1fr);
     min-width: 220px;
   }
   .compare-filter-advanced-grid .notes-trigger { min-width: 100%; }
