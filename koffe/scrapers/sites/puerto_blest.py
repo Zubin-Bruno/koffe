@@ -13,6 +13,7 @@ from koffe.scrapers.utils import (
     clean_text,
     normalize_name,
     normalize_process,
+    normalize_tasting_notes,
     parse_price_cents,
     parse_weight_grams,
 )
@@ -209,7 +210,7 @@ class PuertoBlestScraper(BaseScraper):
         altitude_masl = self._extract_altitude(page_text)
 
         # Tasting notes from description
-        tasting_notes = self._extract_tasting_notes(tree)
+        tasting_notes = normalize_tasting_notes(self._extract_tasting_notes(tree))
         attributes = {}
         if tasting_notes:
             attributes["tasting_notes"] = tasting_notes

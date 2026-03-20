@@ -18,6 +18,7 @@ from koffe.scrapers.utils import (
     normalize_name,
     normalize_process,
     normalize_roast,
+    normalize_tasting_notes,
     parse_price_cents,
     parse_weight_grams,
 )
@@ -156,7 +157,7 @@ class FlatNWhiteScraper(BaseScraper):
             self._extract_field(page_text, ["tueste", "tostado", "roast"])
         )
         altitude_masl = self._extract_altitude(page_text)
-        tasting_notes = self._extract_tasting_notes(tree, page_text)
+        tasting_notes = normalize_tasting_notes(self._extract_tasting_notes(tree, page_text))
         # Brew methods are mentioned in prose inside the full description tab,
         # not in a labeled field. Pass the full tab text to normalize_brew_methods().
         desc_tab = tree.css_first("#tab-description, .woocommerce-Tabs-panel--description")
@@ -376,7 +377,7 @@ class FlatNWhiteScraper(BaseScraper):
                 if re.search(r"notas?\s+de\s+cata", ancestor_text, re.IGNORECASE):
                     raw = node.text().strip()
                     if raw:
-                        notes = [n.strip() for n in re.split(r"[,/y&+]", raw) if n.strip()]
+                        notes = [n.strip() for n in re.split(r"[,/&+]|\s+y\s+", raw) if n.strip()]
                         return notes[:6] if notes else None
 
         # Regex fallback — "perfil" removed to avoid matching "perfil en taza"
@@ -387,6 +388,6 @@ class FlatNWhiteScraper(BaseScraper):
         )
         if match:
             raw = match.group(1).strip()
-            notes = [n.strip() for n in re.split(r"[,/y&+]", raw) if n.strip()]
+            notes = [n.strip() for n in re.split(r"[,/&+]|\s+y\s+", raw) if n.strip()]
             return notes[:6] if notes else None
         return None

@@ -219,6 +219,150 @@ def normalize_brew_methods(raw: str | None) -> list[str] | None:
     return methods if methods else None
 
 
+def _spanish_title_case(text: str) -> str:
+    """
+    Title-case for Spanish: capitalize first word + all non-prepositions.
+    Keeps short prepositions like 'de', 'con', 'del', 'en', 'a' lowercase
+    (unless they're the first word).
+
+    Examples:
+        "azúcar de caña"   → "Azúcar de Caña"
+        "fruta de hueso"   → "Fruta de Hueso"
+        "chocolate con leche" → "Chocolate con Leche"
+    """
+    LOWERCASE_WORDS = {"de", "del", "con", "en", "a", "al", "el", "la", "las", "los", "y"}
+    words = text.split()
+    result = []
+    for i, w in enumerate(words):
+        if i == 0 or w.lower() not in LOWERCASE_WORDS:
+            result.append(w.capitalize())
+        else:
+            result.append(w.lower())
+    return " ".join(result)
+
+
+def normalize_tasting_notes(raw_notes: list[str] | None) -> list[str] | None:
+    """
+    Clean, normalize, and deduplicate a list of tasting notes.
+
+    Pipeline per note:
+    1. Replace non-breaking spaces with regular spaces
+    2. Strip whitespace
+    3. Re-split on '.' followed by text (handles "Anana. chocolate" → two notes)
+    4. Strip trailing/leading punctuation
+    5. Strip known label prefixes
+    6. Lowercase
+    7. Apply typo corrections
+    8. Apply plural→singular mapping
+    9. Split known compound notes
+    10. Apply Spanish title case
+    11. Filter junk (< 2 chars, known non-notes)
+    12. Deduplicate, cap at 6
+
+    Examples:
+        ["Durano", "vainilla."] → ["Durazno", "Vainilla"]
+        ["Anana. chocolate"]    → ["Ananá", "Chocolate"]
+        ["vainilla miel"]       → ["Vainilla", "Miel"]
+        ["CHOCOLATE", "chocolate"] → ["Chocolate"]
+    """
+    if not raw_notes:
+        return None
+
+    TYPO_MAP = {
+        "durano": "durazno",
+        "anana": "ananá",
+        "arandano": "arándano",
+        "limon": "limón",
+        "citrico": "cítrico",
+        "citricos": "cítrico",
+        "cascara": "cáscara",
+    }
+
+    PLURAL_MAP = {
+        "arándanos": "arándano",
+        "arandanos": "arándano",
+        "frutas de hueso": "fruta de hueso",
+        "cerezas": "cereza",
+        "cítricos": "cítrico",
+        "frutos rojos": "fruto rojo",
+        "frutos secos": "fruto seco",
+        "frutas tropicales": "fruta tropical",
+        "flores blancas": "flor blanca",
+        "flores": "flor",
+    }
+
+    COMPOUND_MAP = {
+        "vainilla miel": ["vainilla", "miel"],
+        "caramelo chocolate": ["caramelo", "chocolate"],
+    }
+
+    JUNK = {"en taza", "perfil en taza", "perfil", "taza", "café", "cafe"}
+
+    LABEL_PREFIXES = re.compile(
+        r"^(?:organolépticas|organolepticas|que recuerda a|notas de cata|notas)[:\s]*",
+        re.IGNORECASE,
+    )
+
+    cleaned: list[str] = []
+
+    for note in raw_notes:
+        # 1. Replace non-breaking spaces
+        note = note.replace("\xa0", " ")
+        # 2. Strip whitespace
+        note = note.strip()
+        if not note:
+            continue
+
+        # 3. Re-split on '.' followed by text (handles "Anana. chocolate")
+        parts = re.split(r"\.\s+", note)
+
+        for part in parts:
+            # 4. Strip trailing/leading punctuation
+            part = part.strip(" \t.,;:")
+            if not part:
+                continue
+
+            # 5. Strip known label prefixes
+            part = LABEL_PREFIXES.sub("", part).strip()
+            if not part:
+                continue
+
+            # 6. Lowercase for matching
+            lower = part.lower()
+
+            # 7. Typo corrections
+            lower = TYPO_MAP.get(lower, lower)
+
+            # 8. Plural → singular
+            lower = PLURAL_MAP.get(lower, lower)
+
+            # 9. Split known compounds
+            if lower in COMPOUND_MAP:
+                for sub in COMPOUND_MAP[lower]:
+                    cleaned.append(sub)
+                continue
+
+            cleaned.append(lower)
+
+    # 10. Spanish title case + 11. Filter junk
+    result: list[str] = []
+    seen: set[str] = set()
+    for note in cleaned:
+        if len(note) < 2:
+            continue
+        if note.lower() in JUNK:
+            continue
+        titled = _spanish_title_case(note)
+        key = titled.lower()
+        if key not in seen:
+            seen.add(key)
+            result.append(titled)
+
+    # 12. Cap at 6, return None if empty
+    result = result[:6]
+    return result if result else None
+
+
 def normalize_roast(raw: str | None) -> str | None:
     """
     Normalize roast level to one of: Light, Medium-Light, Medium, Medium-Dark, Dark.

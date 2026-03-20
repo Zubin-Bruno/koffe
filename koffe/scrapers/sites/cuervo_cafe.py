@@ -14,6 +14,7 @@ from koffe.scrapers.utils import (
     normalize_brew_methods,
     normalize_name,
     normalize_process,
+    normalize_tasting_notes,
     parse_weight_grams,
 )
 
@@ -159,7 +160,7 @@ class CuervoCafeScraper(BaseScraper):
         acidity, sweetness, body = self._extract_ratings(tree)
 
         # Tasting notes
-        tasting_notes = self._extract_tasting_notes(page_text, tree)
+        tasting_notes = normalize_tasting_notes(self._extract_tasting_notes(page_text, tree))
 
         # Availability — WooCommerce marks out-of-stock
         stock_node = tree.css_first(".out-of-stock") or tree.css_first(".stock.out-of-stock")
@@ -198,7 +199,7 @@ class CuervoCafeScraper(BaseScraper):
         if node:
             raw = node.text()
             # &nbsp; becomes \u00a0 in Python — treat it like a space
-            notes = [n.strip() for n in re.split(r"[\s\u00a0]+", raw) if n.strip()]
+            notes = [n.strip() for n in re.split(r"\u00a0+", raw) if n.strip()]
             # Only accept if it looks like tasting notes (2–6 short items)
             if 2 <= len(notes) <= 6 and all(len(n) <= 40 for n in notes):
                 return notes
@@ -226,7 +227,7 @@ class CuervoCafeScraper(BaseScraper):
         )
         if match:
             raw = match.group(1).strip()
-            notes = [n.strip() for n in re.split(r"[,/y&+]", raw) if n.strip()]
+            notes = [n.strip() for n in re.split(r"[,/&+]|\s+y\s+", raw) if n.strip()]
             return notes[:6] if notes else None
         return None
 

@@ -15,6 +15,7 @@ from koffe.scrapers.utils import (
     normalize_name,
     normalize_process,
     normalize_roast,
+    normalize_tasting_notes,
     parse_price_cents,
 )
 
@@ -191,7 +192,7 @@ class FuegoTostadoresScraper(BaseScraper):
         )
 
         # Tasting notes
-        tasting_notes = self._extract_tasting_notes(page_text)
+        tasting_notes = normalize_tasting_notes(self._extract_tasting_notes(page_text))
         attributes = {}
         if tasting_notes:
             attributes["tasting_notes"] = tasting_notes
@@ -306,6 +307,6 @@ class FuegoTostadoresScraper(BaseScraper):
         )
         if match:
             raw = match.group(1).strip()
-            notes = [n.strip() for n in re.split(r"[,/y&+]", raw) if n.strip()]
+            notes = [n.strip() for n in re.split(r"[,/&+]|\s+y\s+", raw) if n.strip()]
             return notes[:6] if notes else None
         return None
