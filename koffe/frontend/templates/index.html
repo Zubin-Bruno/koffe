@@ -81,6 +81,7 @@
       >
         <span class="filter-toggle-icon">+</span>
         Notas de cata
+        <span class="filter-count" id="notes-count" style="display:none"></span>
       </button>
 
       <button type="button" class="filter-toggle-btn" onclick="openCompare()">
@@ -233,6 +234,22 @@
       document.getElementById('filter-notes').classList.add('is-open');
       document.getElementById('notes-toggle').classList.add('is-active');
     }
+
+    // Update count badge on tasting notes
+    function updateNotesCount() {
+      var checked = form.querySelectorAll('input[name="tasting_note"]:checked').length;
+      var badge = document.getElementById('notes-count');
+      if (checked > 0) {
+        badge.textContent = checked;
+        badge.style.display = '';
+      } else {
+        badge.style.display = 'none';
+      }
+    }
+    updateNotesCount();
+    Array.prototype.forEach.call(noteChecks, function(cb) {
+      cb.addEventListener('change', updateNotesCount);
+    });
   })();
 
 </script>
