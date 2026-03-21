@@ -135,7 +135,7 @@ def _get_filter_options(db: Session) -> dict:
         if bm:
             brew_set.update(bm)
         if attrs and "tasting_notes" in attrs:
-            note_set.update(attrs["tasting_notes"])
+            note_set.update(n[0].upper() + n[1:] for n in attrs["tasting_notes"] if n)
 
     return {
         "roasters": roasters,
@@ -143,7 +143,7 @@ def _get_filter_options(db: Session) -> dict:
         "processes": all_processes,
         "varieties": all_varieties,
         "brew_methods_options": sorted(brew_set),
-        "tasting_notes_options": sorted(note_set),
+        "tasting_notes_options": sorted(note_set, key=str.lower),
     }
 
 

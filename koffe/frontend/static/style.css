@@ -802,7 +802,7 @@ body.modal-open { overflow: hidden; }
   font-family: var(--font-body);
   font-size: 0.95rem;
   cursor: pointer;
-  min-width: 160px;
+  min-width: 220px;
   transition: border-color 0.15s;
   text-align: left;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7e74'/%3E%3C/svg%3E");
@@ -830,8 +830,8 @@ body.modal-open { overflow: hidden; }
   grid-template-columns: repeat(3, 1fr);
   gap: 0;
   column-gap: 1rem;
-  min-width: 400px;
-  max-height: 300px;
+  min-width: 650px;
+  max-height: 450px;
   overflow-y: auto;
 }
 
