@@ -289,16 +289,16 @@ main {
 }
 
 .filter-advanced.is-open {
-  max-height: 450px;
+  max-height: 600px;
   overflow: visible;
-  padding: 1.25rem 1.5rem;
+  padding: 2rem 1.5rem;
   border-top: 1px solid var(--border);
 }
 
 .filter-advanced-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 1rem 1.5rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem 1.5rem;
 }
 
 .filter-advanced label {
@@ -790,6 +790,7 @@ body.modal-open { overflow: hidden; }
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-muted);
+  grid-column: span 2;
 }
 
 .notes-trigger {
