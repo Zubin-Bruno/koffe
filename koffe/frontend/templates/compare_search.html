@@ -78,20 +78,6 @@
           </select>
         </label>
 
-        <div class="notes-dropdown" data-notes-dropdown>
-          Notas
-          <input type="hidden" name="tasting_note" value="{{ filters.tasting_note }}" />
-          <button type="button" class="notes-trigger">
-            {{ filters.tasting_note or 'Todos' }}
-          </button>
-          <div class="notes-panel">
-            <div class="notes-item {% if not filters.tasting_note %}is-selected{% endif %}" data-value="">Todos</div>
-            {% for n in tasting_notes_options %}
-            <div class="notes-item {% if filters.tasting_note == n %}is-selected{% endif %}" data-value="{{ n }}">{{ n }}</div>
-            {% endfor %}
-          </div>
-        </div>
-
         <label>
           Acidez
           <div class="filter-range">

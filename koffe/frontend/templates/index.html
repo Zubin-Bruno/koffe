@@ -65,7 +65,7 @@
 
       <button
         type="button"
-        class="filter-toggle-btn {% if filters.variety or filters.brew_method or filters.tasting_note or filters.acidity_min or filters.acidity_max or filters.sweetness_min or filters.sweetness_max or filters.body_min or filters.body_max %}is-active{% endif %}"
+        class="filter-toggle-btn {% if filters.variety or filters.brew_method or filters.acidity_min or filters.acidity_max or filters.sweetness_min or filters.sweetness_max or filters.body_min or filters.body_max %}is-active{% endif %}"
         onclick="toggleAdvanced()"
         id="filter-toggle"
       >
@@ -102,20 +102,6 @@
             {% endfor %}
           </select>
         </label>
-
-        <div class="notes-dropdown" data-notes-dropdown>
-          Notas de cata
-          <input type="hidden" name="tasting_note" value="{{ filters.tasting_note }}" />
-          <button type="button" class="notes-trigger">
-            {{ filters.tasting_note or 'Todos' }}
-          </button>
-          <div class="notes-panel">
-            <div class="notes-item {% if not filters.tasting_note %}is-selected{% endif %}" data-value="">Todos</div>
-            {% for n in tasting_notes_options %}
-            <div class="notes-item {% if filters.tasting_note == n %}is-selected{% endif %}" data-value="{{ n }}">{{ n }}</div>
-            {% endfor %}
-          </div>
-        </div>
 
         <label>
           Acidez
@@ -195,7 +181,7 @@
 
   // Auto-open advanced panel if any advanced filter has a value on page load
   (function() {
-    var advancedFields = ['variety', 'brew_method', 'tasting_note',
+    var advancedFields = ['variety', 'brew_method',
                           'acidity_min', 'acidity_max', 'sweetness_min',
                           'sweetness_max', 'body_min', 'body_max'];
     var form = document.getElementById('filter-form');
@@ -210,7 +196,5 @@
     }
   })();
 
-  // Initialize notes dropdowns on this page
-  initNotesDropdowns();
 </script>
 {% endblock %}
