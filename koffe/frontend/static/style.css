@@ -831,7 +831,7 @@ body.modal-open { overflow: hidden; }
   grid-template-columns: repeat(3, 1fr);
   gap: 0;
   column-gap: 1rem;
-  min-width: 650px;
+  min-width: min(650px, 90vw);
   max-height: 450px;
   overflow-y: auto;
 }

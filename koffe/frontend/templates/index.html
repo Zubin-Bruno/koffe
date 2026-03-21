@@ -210,46 +210,7 @@
     }
   })();
 
-  // ── Notes dropdown (custom 3-column select) ───────────────
-  function initNotesDropdowns() {
-    document.querySelectorAll('[data-notes-dropdown]').forEach(function(dd) {
-      var trigger = dd.querySelector('.notes-trigger');
-      var panel = dd.querySelector('.notes-panel');
-      var hidden = dd.querySelector('input[type="hidden"]');
-
-      trigger.addEventListener('click', function(e) {
-        e.stopPropagation();
-        // Close any other open panels first
-        document.querySelectorAll('.notes-panel.is-open').forEach(function(p) {
-          if (p !== panel) p.classList.remove('is-open');
-        });
-        panel.classList.toggle('is-open');
-      });
-
-      panel.addEventListener('click', function(e) {
-        var item = e.target.closest('.notes-item');
-        if (!item) return;
-        // Update selection
-        hidden.value = item.dataset.value;
-        trigger.textContent = item.dataset.value || 'Todos';
-        // Visual feedback
-        panel.querySelectorAll('.notes-item').forEach(function(i) { i.classList.remove('is-selected'); });
-        item.classList.add('is-selected');
-        panel.classList.remove('is-open');
-        // Trigger HTMX form change
-        hidden.dispatchEvent(new Event('change', { bubbles: true }));
-      });
-    });
-
-    // Close on click outside
-    document.addEventListener('click', function(e) {
-      if (!e.target.closest('[data-notes-dropdown]')) {
-        document.querySelectorAll('.notes-panel.is-open').forEach(function(p) {
-          p.classList.remove('is-open');
-        });
-      }
-    });
-  }
+  // Initialize notes dropdowns on this page
   initNotesDropdowns();
 </script>
 {% endblock %}

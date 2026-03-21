@@ -105,8 +105,18 @@ def _apply_filters(q, origin, process, roaster_id_int, acidity_min_int,
         q = q.filter(func.strip_accents(cast(Coffee.brew_methods, String)).ilike(
             f"%{_strip_accents(brew_method)}%"))
     if tasting_note:
-        q = q.filter(func.strip_accents(cast(Coffee.attributes, String)).ilike(
-            f"%{_strip_accents(tasting_note)}%"))
+        # Use json_each() to match exact tasting notes inside the JSON array,
+        # instead of searching the whole attributes blob as a string.
+        # This prevents "Berry" from matching "Blueberry" or "Strawberry".
+        from sqlalchemy import text
+        note_stripped = _strip_accents(tasting_note).lower()
+        q = q.filter(
+            text(
+                "EXISTS (SELECT 1 FROM json_each(json_extract(attributes, '$.tasting_notes')) AS jn "
+                "WHERE LOWER(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE("
+                "jn.value, 'á','a'), 'é','e'), 'í','i'), 'ó','o'), 'ú','u')) = :note)"
+            ).bindparams(note=note_stripped)
+        )
     if search:
         term = f"%{_strip_accents(search)}%"
         q = q.filter(or_(
@@ -158,6 +168,10 @@ def list_coffees(
     sweetness_max: str | None = Query(None),
     body_min: str | None = Query(None),
     body_max: str | None = Query(None),
+    variety: str | None = Query(None),
+    brew_method: str | None = Query(None),
+    tasting_note: str | None = Query(None),
+    search: str | None = Query(None),
     available_only: str | None = Query(None),
     min_price: str | None = Query(None),
     max_price: str | None = Query(None),
@@ -179,24 +193,13 @@ def list_coffees(
 
     if available_only is None or available_only == "true":
         q = q.filter(Coffee.is_available == True)
-    if roaster_id_int:
-        q = q.filter(Coffee.roaster_id == roaster_id_int)
-    if origin:
-        q = q.filter(Coffee.origin_country.ilike(f"%{origin}%"))
-    if process:
-        q = q.filter(Coffee.process.ilike(f"%{process}%"))
-    if acidity_min_int:
-        q = q.filter(Coffee.acidity >= acidity_min_int)
-    if acidity_max_int:
-        q = q.filter(Coffee.acidity <= acidity_max_int)
-    if sweetness_min_int:
-        q = q.filter(Coffee.sweetness >= sweetness_min_int)
-    if sweetness_max_int:
-        q = q.filter(Coffee.sweetness <= sweetness_max_int)
-    if body_min_int:
-        q = q.filter(Coffee.body >= body_min_int)
-    if body_max_int:
-        q = q.filter(Coffee.body <= body_max_int)
+
+    q = _apply_filters(q, origin, process, roaster_id_int,
+                       acidity_min_int, acidity_max_int,
+                       sweetness_min_int, sweetness_max_int,
+                       body_min_int, body_max_int,
+                       variety, brew_method, tasting_note, search)
+
     if min_price_int is not None:
         q = q.filter(Coffee.price_cents >= min_price_int)
     if max_price_int is not None:
