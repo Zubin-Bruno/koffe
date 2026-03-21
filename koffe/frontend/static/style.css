@@ -312,6 +312,75 @@ main {
   color: var(--text-muted);
 }
 
+/* ── Tasting notes checkbox panel ── */
+.filter-notes {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.35s ease, padding 0.35s ease;
+  border-top: 0px solid transparent;
+}
+
+.filter-notes.is-open {
+  max-height: 500px;
+  overflow-y: auto;
+  padding: 1.25rem 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+.filter-notes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.4rem 1.5rem;
+}
+
+.note-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  padding: 0.25rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.88rem;
+  color: var(--text);
+  transition: background 0.15s;
+  user-select: none;
+}
+
+.note-checkbox:hover {
+  background: var(--tag-bg);
+}
+
+.note-checkbox input[type="checkbox"] {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  border: 2px solid var(--border);
+  border-radius: 3px;
+  background: var(--card-bg);
+  cursor: pointer;
+  position: relative;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.note-checkbox input[type="checkbox"]:checked {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
+.note-checkbox input[type="checkbox"]:checked::after {
+  content: "";
+  position: absolute;
+  left: 3px;
+  top: 0px;
+  width: 5px;
+  height: 9px;
+  border: solid #fff;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
 .filter-range {
   display: flex;
   align-items: center;
@@ -801,6 +870,10 @@ body.modal-open { overflow: hidden; }
   }
   .filter-range { width: 100%; }
   .filter-range select { min-width: 48%; }
+
+  .filter-notes-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
 
   .detail-header { flex-direction: column; align-items: center; text-align: center; }
   .detail-image { width: 120px; }

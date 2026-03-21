@@ -73,6 +73,16 @@
         Más filtros
       </button>
 
+      <button
+        type="button"
+        class="filter-toggle-btn {% if filters.tasting_notes %}is-active{% endif %}"
+        onclick="toggleNotes()"
+        id="notes-toggle"
+      >
+        <span class="filter-toggle-icon">+</span>
+        Notas de cata
+      </button>
+
       <button type="button" class="filter-toggle-btn" onclick="openCompare()">
         Comparar
       </button>
@@ -163,6 +173,19 @@
       </div>
     </div>
 
+    {# ── Tasting notes checkbox panel (hidden by default, slides open) ── #}
+    <div class="filter-notes" id="filter-notes">
+      <div class="filter-notes-grid">
+        {% for n in tasting_notes_options %}
+        <label class="note-checkbox">
+          <input type="checkbox" name="tasting_note" value="{{ n }}"
+            {% if n in filters.tasting_notes %}checked{% endif %} />
+          <span>{{ n }}</span>
+        </label>
+        {% endfor %}
+      </div>
+    </div>
+
   </form>
 </section>
 
@@ -175,6 +198,14 @@
   function toggleAdvanced() {
     var panel = document.getElementById('filter-advanced');
     var btn = document.getElementById('filter-toggle');
+    panel.classList.toggle('is-open');
+    btn.classList.toggle('is-active');
+  }
+
+  // Toggle tasting notes panel
+  function toggleNotes() {
+    var panel = document.getElementById('filter-notes');
+    var btn = document.getElementById('notes-toggle');
     panel.classList.toggle('is-open');
     btn.classList.toggle('is-active');
   }
@@ -193,6 +224,14 @@
     if (hasAdvanced) {
       document.getElementById('filter-advanced').classList.add('is-open');
       document.getElementById('filter-toggle').classList.add('is-active');
+    }
+
+    // Auto-open tasting notes panel if any note is checked
+    var noteChecks = form.querySelectorAll('input[name="tasting_note"]');
+    var hasNotes = Array.prototype.some.call(noteChecks, function(cb) { return cb.checked; });
+    if (hasNotes) {
+      document.getElementById('filter-notes').classList.add('is-open');
+      document.getElementById('notes-toggle').classList.add('is-active');
     }
   })();
 

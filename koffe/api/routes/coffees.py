@@ -2,7 +2,7 @@ import unicodedata
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
-from sqlalchemy import cast, String, or_, func
+from sqlalchemy import cast, String, or_, func, text
 from sqlalchemy.orm import Session
 
 from koffe.db.database import get_db
@@ -32,11 +32,12 @@ def _parse_int(val: str | None) -> int | None:
 
 def _has_any_filter(origin, process, roaster_id, variety, brew_method,
                     acidity_min, acidity_max, sweetness_min,
-                    sweetness_max, body_min, body_max, search=None) -> bool:
+                    sweetness_max, body_min, body_max, search=None,
+                    tasting_notes=None) -> bool:
     """Return True if the user has set at least one filter."""
     return any([origin, process, roaster_id, variety, brew_method,
                 acidity_min, acidity_max, sweetness_min,
-                sweetness_max, body_min, body_max, search])
+                sweetness_max, body_min, body_max, search, tasting_notes])
 
 
 def _coffee_to_dict(c: Coffee) -> dict:
@@ -71,7 +72,7 @@ def _coffee_to_dict(c: Coffee) -> dict:
 def _apply_filters(q, origin, process, roaster_id_int, acidity_min_int,
                    acidity_max_int, sweetness_min_int, sweetness_max_int,
                    body_min_int, body_max_int, variety, brew_method,
-                   search=None):
+                   search=None, tasting_notes=None):
     """Apply all filter conditions to a query. Returns the filtered query.
 
     Text filters use func.strip_accents() (registered in database.py) so that
@@ -111,6 +112,20 @@ def _apply_filters(q, origin, process, roaster_id_int, acidity_min_int,
             func.strip_accents(Coffee.description).ilike(term),
             func.strip_accents(cast(Coffee.attributes, String)).ilike(term),
         ))
+    if tasting_notes:
+        # OR logic: coffee matches if it has ANY of the selected notes.
+        # Uses json_each() to search inside the JSON array stored in
+        # attributes->'tasting_notes'.  Accent-insensitive via strip_accents.
+        note_clauses = []
+        for note in tasting_notes:
+            clean = _strip_accents(note).lower()
+            clause = text(
+                "EXISTS (SELECT 1 FROM json_each("
+                "json_extract(coffees.attributes, '$.tasting_notes')) "
+                "WHERE strip_accents(LOWER(value)) = :note)"
+            ).bindparams(note=clean)
+            note_clauses.append(clause)
+        q = q.filter(or_(*note_clauses))
     return q
 
 
@@ -132,12 +147,28 @@ def _get_filter_options(db: Session) -> dict:
         if bm:
             brew_set.update(bm)
 
+    # Extract unique tasting notes from attributes JSON
+    attr_rows = db.query(Coffee.attributes).filter(
+        Coffee.is_available == True,
+        Coffee.attributes.isnot(None),
+    ).all()
+    notes_set: set[str] = set()
+    for (attrs,) in attr_rows:
+        if attrs and isinstance(attrs, dict):
+            raw_notes = attrs.get("tasting_notes", [])
+            if isinstance(raw_notes, list):
+                for n in raw_notes:
+                    if isinstance(n, str) and n.strip():
+                        # Normalize: first letter uppercase, rest lowercase
+                        notes_set.add(n.strip().capitalize())
+
     return {
         "roasters": roasters,
         "origins": all_origins,
         "processes": all_processes,
         "varieties": all_varieties,
         "brew_methods_options": sorted(brew_set),
+        "tasting_notes_options": sorted(notes_set),
     }
 
 
@@ -155,6 +186,7 @@ def list_coffees(
     variety: str | None = Query(None),
     brew_method: str | None = Query(None),
     search: str | None = Query(None),
+    tasting_note: list[str] = Query(default=[]),
     available_only: str | None = Query(None),
     min_price: str | None = Query(None),
     max_price: str | None = Query(None),
@@ -181,7 +213,7 @@ def list_coffees(
                        acidity_min_int, acidity_max_int,
                        sweetness_min_int, sweetness_max_int,
                        body_min_int, body_max_int,
-                       variety, brew_method, search)
+                       variety, brew_method, search, tasting_note)
 
     if min_price_int is not None:
         q = q.filter(Coffee.price_cents >= min_price_int)
@@ -246,6 +278,7 @@ async def index(
     variety: str | None = None,
     brew_method: str | None = None,
     search: str | None = None,
+    tasting_note: list[str] = Query(default=[]),
     db: Session = Depends(get_db),
 ):
     roaster_id_int = _parse_int(roaster_id)
@@ -260,6 +293,7 @@ async def index(
         origin, process, roaster_id_int, variety, brew_method,
         acidity_min_int, acidity_max_int, sweetness_min_int,
         sweetness_max_int, body_min_int, body_max_int, search,
+        tasting_note,
     )
 
     total_available = db.query(Coffee).filter(Coffee.is_available == True).count()
@@ -270,7 +304,7 @@ async def index(
                            acidity_min_int, acidity_max_int,
                            sweetness_min_int, sweetness_max_int,
                            body_min_int, body_max_int,
-                           variety, brew_method, search)
+                           variety, brew_method, search, tasting_note)
         coffees = q.order_by(Coffee.name).limit(200).all()
     else:
         coffees = []
@@ -297,6 +331,7 @@ async def index(
                 "variety": variety or "",
                 "brew_method": brew_method or "",
                 "search": search or "",
+                "tasting_notes": tasting_note,
             },
             "total": len(coffees),
             "total_available": total_available,
@@ -320,6 +355,7 @@ async def coffees_partial(
     variety: str | None = None,
     brew_method: str | None = None,
     search: str | None = None,
+    tasting_note: list[str] = Query(default=[]),
     db: Session = Depends(get_db),
 ):
     """HTMX partial — returns only the coffee card grid."""
@@ -335,6 +371,7 @@ async def coffees_partial(
         origin, process, roaster_id_int, variety, brew_method,
         acidity_min_int, acidity_max_int, sweetness_min_int,
         sweetness_max_int, body_min_int, body_max_int, search,
+        tasting_note,
     )
 
     if has_filters:
@@ -343,7 +380,7 @@ async def coffees_partial(
                            acidity_min_int, acidity_max_int,
                            sweetness_min_int, sweetness_max_int,
                            body_min_int, body_max_int,
-                           variety, brew_method, search)
+                           variety, brew_method, search, tasting_note)
         coffees = q.order_by(Coffee.name).limit(200).all()
     else:
         coffees = []
@@ -376,6 +413,7 @@ async def compare_search(
     variety: str | None = None,
     brew_method: str | None = None,
     search: str | None = None,
+    tasting_note: list[str] = Query(default=[]),
     db: Session = Depends(get_db),
 ):
     """HTMX partial — filter form + card grid for one comparison slot."""
@@ -391,6 +429,7 @@ async def compare_search(
         origin, process, roaster_id_int, variety, brew_method,
         acidity_min_int, acidity_max_int, sweetness_min_int,
         sweetness_max_int, body_min_int, body_max_int, search,
+        tasting_note,
     )
 
     if has_filters:
@@ -399,7 +438,7 @@ async def compare_search(
                            acidity_min_int, acidity_max_int,
                            sweetness_min_int, sweetness_max_int,
                            body_min_int, body_max_int,
-                           variety, brew_method, search)
+                           variety, brew_method, search, tasting_note)
         coffees = q.order_by(Coffee.name).limit(100).all()
     else:
         coffees = []
