@@ -2215,7 +2215,7 @@ body.card-expanded-open { overflow: hidden; }
 }
 
 .search-sidebar {
-  flex: 0 0 clamp(360px, 22vw, 480px);
+  flex: 0 0 clamp(504px, 30.8vw, 672px);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -2270,6 +2270,11 @@ body.card-expanded-open { overflow: hidden; }
   display: flex;
   flex-direction: column;
   gap: 0.25rem;
+}
+.notes-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.2rem 0.5rem;
 }
 .scrollable-list {
   max-height: 200px;
