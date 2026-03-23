@@ -337,6 +337,7 @@
       var fill = slider.querySelector('.range-slider-fill');
       var minVal = slider.querySelector('.min-val');
       var maxVal = slider.querySelector('.max-val');
+      var sep = slider.querySelector('.val-sep');
       var hiddenMin = slider.querySelector('.hidden-min');
       var hiddenMax = slider.querySelector('.hidden-max');
 
@@ -360,32 +361,39 @@
         fill.style.left = percentMin + '%';
         fill.style.width = (percentMax - percentMin) + '%';
 
-        var sep = slider.querySelector('.val-sep');
         if (min === 1 && max === 5) {
-          minVal.textContent = 'Todos';
-          maxVal.textContent = '';
+          if (minVal) minVal.textContent = 'Todos';
+          if (maxVal) maxVal.textContent = '';
           if (sep) sep.style.display = 'none';
           hiddenMin.value = '';
           hiddenMax.value = '';
+        } else if (min === max) {
+          if (minVal) minVal.textContent = min;
+          if (maxVal) maxVal.textContent = '';
+          if (sep) sep.style.display = 'none';
+          hiddenMin.value = min;
+          hiddenMax.value = max;
         } else {
-          minVal.textContent = min;
-          maxVal.textContent = max;
+          if (minVal) minVal.textContent = min;
+          if (maxVal) maxVal.textContent = max;
           if (sep) sep.style.display = '';
           hiddenMin.value = min;
           hiddenMax.value = max;
         }
       }
 
-      minInput.addEventListener('input', function() { update(minInput); });
-      maxInput.addEventListener('input', function() { update(maxInput); });
-
-      minInput.addEventListener('change', function() {
-        var ev = new Event('change', { bubbles: true });
-        hiddenMin.dispatchEvent(ev);
+      [minInput, maxInput].forEach(function(input) {
+        input.addEventListener('input', function() { update(input); });
+        input.addEventListener('change', function() {
+          var target = (input === minInput) ? hiddenMin : hiddenMax;
+          target.dispatchEvent(new Event('change', { bubbles: true }));
+        });
+        input.addEventListener('pointerdown', function() {
+          slider.classList.add('is-dragging');
+        });
       });
-      maxInput.addEventListener('change', function() {
-        var ev = new Event('change', { bubbles: true });
-        hiddenMax.dispatchEvent(ev);
+      document.addEventListener('pointerup', function() {
+        slider.classList.remove('is-dragging');
       });
 
       update(null);

@@ -101,6 +101,11 @@
                 <input type="range" class="max-input" min="1" max="5" value="{{ filters.acidity_max or 5 }}">
                 <input type="hidden" name="acidity_min" class="hidden-min" value="{{ filters.acidity_min or '' }}">
                 <input type="hidden" name="acidity_max" class="hidden-max" value="{{ filters.acidity_max or '' }}">
+                <div class="range-slider-values">
+                  <span class="min-val"></span>
+                  <span class="val-sep">&ndash;</span>
+                  <span class="max-val"></span>
+                </div>
               </div>
             </div>
             <div class="filter-group">
@@ -115,6 +120,11 @@
                 <input type="range" class="max-input" min="1" max="5" value="{{ filters.sweetness_max or 5 }}">
                 <input type="hidden" name="sweetness_min" class="hidden-min" value="{{ filters.sweetness_min or '' }}">
                 <input type="hidden" name="sweetness_max" class="hidden-max" value="{{ filters.sweetness_max or '' }}">
+                <div class="range-slider-values">
+                  <span class="min-val"></span>
+                  <span class="val-sep">&ndash;</span>
+                  <span class="max-val"></span>
+                </div>
               </div>
             </div>
             <div class="filter-group">
@@ -129,6 +139,11 @@
                 <input type="range" class="max-input" min="1" max="5" value="{{ filters.body_max or 5 }}">
                 <input type="hidden" name="body_min" class="hidden-min" value="{{ filters.body_min or '' }}">
                 <input type="hidden" name="body_max" class="hidden-max" value="{{ filters.body_max or '' }}">
+                <div class="range-slider-values">
+                  <span class="min-val"></span>
+                  <span class="val-sep">&ndash;</span>
+                  <span class="max-val"></span>
+                </div>
               </div>
             </div>
           </div>
