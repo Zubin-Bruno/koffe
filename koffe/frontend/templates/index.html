@@ -1,162 +1,96 @@
 {% extends "base.html" %}
-{% block title %}Koffe — Explorar cafés{% endblock %}
+{% block title %}Koffe — Buscar con filtros{% endblock %}
 
 {% block content %}
-<div class="explorer-header">
-  <h1>Explorar</h1>
-  <p class="explorer-subtitle">{{ total_available }} café{{ 's' if total_available != 1 else '' }} disponible{{ 's' if total_available != 1 else '' }}</p>
+<div class="explorer-header search-header">
+  <div>
+    <h1>Buscar con filtros</h1>
+    <p class="explorer-subtitle">{{ total_available }} café{{ 's' if total_available != 1 else '' }} disponible{{ 's' if total_available != 1 else '' }}</p>
+  </div>
+  <a href="/ia" class="btn-refine-ia">Refinar con IA</a>
 </div>
 
-<section class="filters">
-  <form
-    hx-get="/coffees"
-    hx-target="#results"
-    hx-trigger="change, submit"
-    hx-push-url="true"
-    id="filter-form"
-  >
-    {# ── Primary filter bar (always visible) ── #}
-    <div class="filter-bar">
+<div class="search-layout">
+  <!-- Sidebar de filtros -->
+  <aside class="search-sidebar">
+    <form
+      hx-get="/coffees"
+      hx-target="#results"
+      hx-trigger="change, submit, input delay:400ms from:input[type='text']"
+      hx-push-url="true"
+      id="filter-form"
+    >
+      <div class="sidebar-filters">
+        <!-- Búsqueda libre -->
+        <div class="sidebar-group">
+          <label class="sidebar-label">Buscar</label>
+          <input
+            type="text"
+            name="search"
+            class="sidebar-input"
+            placeholder="Nombre, notas..."
+            value="{{ filters.search }}"
+          />
+        </div>
 
-      <div class="filter-group">
-        <div class="dropdown-check">
-          <button type="button" class="dropdown-check-toggle" onclick="toggleDropdown(this)">
-            <span>Tostador</span>
-            <span class="dropdown-count" style="display:none"></span>
-          </button>
-          <div class="dropdown-check-menu">
+        <!-- Tostador -->
+        <div class="sidebar-group">
+          <label class="sidebar-label">Tostador</label>
+          <div class="sidebar-checkboxes scrollable-list">
             {% for r in roasters %}
             <label class="note-checkbox">
-              <input type="checkbox" name="roaster_id" value="{{ r.id }}"
-                {% if r.id in filters.roaster_id %}checked{% endif %} />
               <span>{{ r.name }}</span>
+              <input type="checkbox" name="roaster_id" value="{{ r.id }}" {% if r.id in filters.roaster_id %}checked{% endif %} />
             </label>
             {% endfor %}
           </div>
         </div>
-      </div>
 
-      <div class="filter-group">
-        <div class="dropdown-check">
-          <button type="button" class="dropdown-check-toggle" onclick="toggleDropdown(this)">
-            <span>Origen</span>
-            <span class="dropdown-count" style="display:none"></span>
-          </button>
-          <div class="dropdown-check-menu">
+        <!-- Origen -->
+        <div class="sidebar-group">
+          <label class="sidebar-label">Origen</label>
+          <div class="sidebar-checkboxes scrollable-list">
             {% for o in origins %}
             <label class="note-checkbox">
-              <input type="checkbox" name="origin" value="{{ o }}"
-                {% if o in filters.origin %}checked{% endif %} />
               <span>{{ o }}</span>
+              <input type="checkbox" name="origin" value="{{ o }}" {% if o in filters.origin %}checked{% endif %} />
             </label>
             {% endfor %}
           </div>
         </div>
-      </div>
 
-      <div class="filter-group">
-        <div class="dropdown-check">
-          <button type="button" class="dropdown-check-toggle" onclick="toggleDropdown(this)">
-            <span>Proceso</span>
-            <span class="dropdown-count" style="display:none"></span>
-          </button>
-          <div class="dropdown-check-menu">
+        <!-- Método -->
+        <div class="sidebar-group">
+          <label class="sidebar-label">Método</label>
+          <div class="sidebar-checkboxes scrollable-list">
+            {% for m in brew_methods_options %}
+            <label class="note-checkbox">
+              <span>{{ m }}</span>
+              <input type="checkbox" name="brew_method" value="{{ m }}" {% if m in filters.brew_method %}checked{% endif %} />
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Proceso -->
+        <div class="sidebar-group">
+          <label class="sidebar-label">Proceso</label>
+          <div class="sidebar-checkboxes scrollable-list">
             {% for p in processes %}
             <label class="note-checkbox">
-              <input type="checkbox" name="process" value="{{ p }}"
-                {% if p in filters.process %}checked{% endif %} />
               <span>{{ p }}</span>
+              <input type="checkbox" name="process" value="{{ p }}" {% if p in filters.process %}checked{% endif %} />
             </label>
             {% endfor %}
           </div>
         </div>
-      </div>
 
-      <div class="filter-search filter-group">
-        <input
-          type="text"
-          name="search"
-          placeholder="Buscar..."
-          value="{{ filters.search }}"
-          hx-get="/coffees"
-          hx-target="#results"
-          hx-trigger="input changed delay:400ms"
-          hx-include="#filter-form"
-          hx-push-url="true"
-        />
-      </div>
-
-      <button
-        type="button"
-        class="filter-toggle-btn is-active"
-        onclick="toggleAdvanced()"
-        id="filter-toggle"
-      >
-        <span class="filter-toggle-icon">+</span>
-        <span id="filter-toggle-text">Menos filtros</span>
-      </button>
-
-      <button
-        type="button"
-        class="filter-toggle-btn {% if filters.tasting_notes %}is-active{% endif %}"
-        onclick="toggleNotes()"
-        id="notes-toggle"
-      >
-        <span class="filter-toggle-icon">+</span>
-        Notas de cata
-        <span class="filter-count" id="notes-count" style="display:none"></span>
-      </button>
-
-      <button type="button" class="filter-toggle-btn" onclick="openCompare()">
-        Comparar
-      </button>
-
-    </div>
-
-    {# ── Advanced filter panel (fully displayed by default) ── #}
-    <div class="filter-advanced is-open" id="filter-advanced">
-      <div class="filter-advanced-grid">
-
-        <div class="filter-group">
-          <div class="dropdown-check">
-            <button type="button" class="dropdown-check-toggle" onclick="toggleDropdown(this)">
-              <span>Variedad</span>
-              <span class="dropdown-count" style="display:none"></span>
-            </button>
-            <div class="dropdown-check-menu">
-              {% for v in varieties %}
-              <label class="note-checkbox">
-                <input type="checkbox" name="variety" value="{{ v }}"
-                  {% if v in filters.variety %}checked{% endif %} />
-                <span>{{ v }}</span>
-              </label>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-
-        <div class="filter-group">
-          <div class="dropdown-check">
-            <button type="button" class="dropdown-check-toggle" onclick="toggleDropdown(this)">
-              <span>Método</span>
-              <span class="dropdown-count" style="display:none"></span>
-            </button>
-            <div class="dropdown-check-menu">
-              {% for m in brew_methods_options %}
-              <label class="note-checkbox">
-                <input type="checkbox" name="brew_method" value="{{ m }}"
-                  {% if m in filters.brew_method %}checked{% endif %} />
-                <span>{{ m }}</span>
-              </label>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-
-        <div class="filter-group filter-group--full-width">
-          <div class="filter-intensity-grid">
+        <!-- Perfil Sensorial -->
+        <div class="sidebar-group">
+          <label class="sidebar-label">Perfil Sensorial</label>
+          <div class="sidebar-intensity-grid">
             <div class="filter-group">
-              Acidez
+              <span class="intensity-title">Acidez</span>
               <div class="range-slider">
                 <div class="range-slider-ticks">
                   <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
@@ -167,16 +101,10 @@
                 <input type="range" class="max-input" min="1" max="5" value="{{ filters.acidity_max or 5 }}">
                 <input type="hidden" name="acidity_min" class="hidden-min" value="{{ filters.acidity_min or '' }}">
                 <input type="hidden" name="acidity_max" class="hidden-max" value="{{ filters.acidity_max or '' }}">
-                <div class="range-slider-values">
-                  <span class="min-val"></span>
-                  <span class="val-sep">—</span>
-                  <span class="max-val"></span>
-                </div>
               </div>
             </div>
-
             <div class="filter-group">
-              Dulzor
+              <span class="intensity-title">Dulzor</span>
               <div class="range-slider">
                 <div class="range-slider-ticks">
                   <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
@@ -187,16 +115,10 @@
                 <input type="range" class="max-input" min="1" max="5" value="{{ filters.sweetness_max or 5 }}">
                 <input type="hidden" name="sweetness_min" class="hidden-min" value="{{ filters.sweetness_min or '' }}">
                 <input type="hidden" name="sweetness_max" class="hidden-max" value="{{ filters.sweetness_max or '' }}">
-                <div class="range-slider-values">
-                  <span class="min-val"></span>
-                  <span class="val-sep">—</span>
-                  <span class="max-val"></span>
-                </div>
               </div>
             </div>
-
             <div class="filter-group">
-              Cuerpo
+              <span class="intensity-title">Cuerpo</span>
               <div class="range-slider">
                 <div class="range-slider-ticks">
                   <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
@@ -207,176 +129,55 @@
                 <input type="range" class="max-input" min="1" max="5" value="{{ filters.body_max or 5 }}">
                 <input type="hidden" name="body_min" class="hidden-min" value="{{ filters.body_min or '' }}">
                 <input type="hidden" name="body_max" class="hidden-max" value="{{ filters.body_max or '' }}">
-                <div class="range-slider-values">
-                  <span class="min-val"></span>
-                  <span class="val-sep">—</span>
-                  <span class="max-val"></span>
-                </div>
               </div>
             </div>
           </div>
         </div>
+        
+        <!-- Notas de Cata -->
+        <div class="sidebar-group">
+          <label class="sidebar-label">Notas de cata</label>
+          <div class="sidebar-checkboxes scrollable-list" style="max-height: 150px;">
+            {% for n in tasting_notes_options %}
+            <label class="note-checkbox">
+              <span>{{ n }}</span>
+              <input type="checkbox" name="tasting_note" value="{{ n }}" {% if n in filters.tasting_notes %}checked{% endif %} />
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
+        <!-- Precio -->
+        <div class="sidebar-group">
+          <label class="sidebar-label">Precio</label>
+          <div class="sidebar-price-range">
+            <input type="number" name="min_price" class="sidebar-input price-input" placeholder="Min $" value="{{ filters.min_price }}">
+            <span>-</span>
+            <input type="number" name="max_price" class="sidebar-input price-input" placeholder="Max $" value="{{ filters.max_price }}">
+          </div>
+        </div>
+
+        <!-- Incompletos -->
+        <div class="sidebar-group">
+          <label class="note-checkbox incomplete-checkbox">
+            <span>Incluir cafés con info incompleta</span>
+            <input type="checkbox" name="include_incomplete" value="true" {% if filters.include_incomplete %}checked{% endif %} />
+          </label>
+        </div>
 
       </div>
+    </form>
+  </aside>
+
+  <!-- Grilla de resultados -->
+  <main class="search-main">
+    <div id="results">
+      {% include "coffee_cards.html" %}
     </div>
-
-    {# ── Tasting notes checkbox panel (hidden by default, slides open) ── #}
-    <div class="filter-notes" id="filter-notes">
-      <div class="filter-notes-grid">
-        {% for n in tasting_notes_options %}
-        <label class="note-checkbox">
-          <input type="checkbox" name="tasting_note" value="{{ n }}"
-            {% if n in filters.tasting_notes %}checked{% endif %} />
-          <span>{{ n }}</span>
-        </label>
-        {% endfor %}
-      </div>
-    </div>
-
-  </form>
-</section>
-
-<section class="chat-panel">
-  <div class="chat-input-wrapper">
-    <textarea id="chat-input" class="chat-input" placeholder="" rows="1"></textarea>
-    <button class="chat-send-btn" title="Enviar">
-      <!-- Dark roasted bean (shown in light mode) -->
-      <svg class="chat-bean chat-bean--dark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-        <ellipse cx="12" cy="12" rx="6" ry="9" fill="#3a1a08"/>
-        <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#915E40" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-      </svg>
-      <!-- Light roasted bean (shown in dark mode) -->
-      <svg class="chat-bean chat-bean--light" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
-        <ellipse cx="12" cy="12" rx="6" ry="9" fill="#c9a060"/>
-        <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#915E40" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-      </svg>
-    </button>
-  </div>
-</section>
-
-<div id="results">
-  {% include "coffee_cards.html" %}
+  </main>
 </div>
 
 <script>
-  // Toggle advanced filter panel
-  function toggleAdvanced() {
-    var panel = document.getElementById('filter-advanced');
-    var btn = document.getElementById('filter-toggle');
-    var text = document.getElementById('filter-toggle-text');
-    panel.classList.toggle('is-open');
-    btn.classList.toggle('is-active');
-    if (btn.classList.contains('is-active')) {
-      text.textContent = 'Menos filtros';
-    } else {
-      text.textContent = 'Más filtros';
-    }
-  }
-
-  // Toggle tasting notes panel
-  function toggleNotes() {
-    var panel = document.getElementById('filter-notes');
-    var btn = document.getElementById('notes-toggle');
-    panel.classList.toggle('is-open');
-    btn.classList.toggle('is-active');
-  }
-
-  // Auto-open advanced panel if any advanced filter has a value on page load
-  (function() {
-    var advancedFields = ['variety', 'brew_method',
-                          'acidity_min', 'acidity_max', 'sweetness_min',
-                          'sweetness_max', 'body_min', 'body_max'];
-    var form = document.getElementById('filter-form');
-    if (!form) return;
-    
-    // Panel is now open by default. If we wanted to keep it open only if values were present,
-    // we would use this, but the user specifically asked for it to be open by default.
-    // However, if the user navigates with filters, we make sure it's open.
-    // Since it's already is-open and is-active in HTML, we don't need to force it unless
-    // there was a reason to close it.
-    
-    // Auto-open tasting notes panel if any note is checked
-    var noteChecks = form.querySelectorAll('input[name="tasting_note"]');
-    var hasNotes = Array.prototype.some.call(noteChecks, function(cb) { return cb.checked; });
-    if (hasNotes) {
-      document.getElementById('filter-notes').classList.add('is-open');
-      document.getElementById('notes-toggle').classList.add('is-active');
-    }
-
-    // Update count badge on tasting notes
-    function updateNotesCount() {
-      var checked = form.querySelectorAll('input[name="tasting_note"]:checked').length;
-      var badge = document.getElementById('notes-count');
-      if (checked > 0) {
-        badge.textContent = checked;
-        badge.style.display = '';
-      } else {
-        badge.style.display = 'none';
-      }
-    }
-    updateNotesCount();
-    Array.prototype.forEach.call(noteChecks, function(cb) {
-      cb.addEventListener('change', updateNotesCount);
-    });
-  })();
-
-  // ── Chat typing animation ──
-  (function() {
-    const chatInput = document.getElementById('chat-input');
-    const messages = [
-      "Escribí acá qué buscas",
-      "Conversá con un profesional para encontrar tu café",
-      "Preguntá lo que no sepas acá",
-      "Encontrá tu café acá"
-    ];
-
-    let messageIndex = 0;
-    let charIndex = 0;
-    let isDeleting = false;
-    let typeSpeed = 50;
-
-    function typeAnimation() {
-      if (!chatInput) return;
-      const currentMessage = messages[messageIndex];
-      
-      if (isDeleting) {
-        chatInput.placeholder = currentMessage.substring(0, charIndex--);
-        typeSpeed = 25;
-      } else {
-        chatInput.placeholder = currentMessage.substring(0, charIndex++);
-        typeSpeed = 50;
-      }
-
-      if (!isDeleting && charIndex > currentMessage.length) {
-        isDeleting = true;
-        typeSpeed = 2500; // Wait at the end of the full message
-      } else if (isDeleting && charIndex < 0) {
-        isDeleting = false;
-        messageIndex = (messageIndex + 1) % messages.length;
-        charIndex = 0;
-        typeSpeed = 500; // Pause before typing the next one
-      }
-
-      setTimeout(typeAnimation, typeSpeed);
-    }
-
-    if (chatInput) {
-      typeAnimation();
-    }
-
-    // Auto-expand textarea (optional, but good UX)
-    if (chatInput) {
-      chatInput.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = (this.scrollHeight) + 'px';
-        if (this.scrollHeight > 150) {
-          this.style.overflowY = 'auto';
-          this.style.height = '150px';
-        } else {
-          this.style.overflowY = 'hidden';
-        }
-      });
-    }
-  })();
+  // Range sliders initialization is handled in base.html
 </script>
 {% endblock %}

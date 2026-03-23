@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+{% block title %}Koffe — Explorar con IA{% endblock %}
+
+{% block content %}
+<div class="explorer-header ia-header">
+  <div>
+    <h1>Explorar con IA</h1>
+    <p class="explorer-subtitle">Conversá para descubrir tu próximo café ideal</p>
+  </div>
+  <a href="/buscar" class="btn-refine-ia">Convertir a filtros</a>
+</div>
+
+<div class="ia-layout">
+  <!-- Chat (Izquierda) -->
+  <aside class="ia-chat-sidebar">
+    <div class="ia-chat-messages" id="chat-messages">
+       <div class="chat-msg chat-msg-ai">
+         ¡Hola! Soy tu asistente barista. ¿Qué tipo de café estás buscando hoy? 
+       </div>
+    </div>
+    
+    <div class="chat-panel ia-chat-panel">
+      <div class="chat-input-wrapper">
+        <textarea id="ia-chat-input" class="chat-input" placeholder="Escribí acá..." rows="1"></textarea>
+        <button class="chat-send-btn" title="Enviar">
+          <svg class="chat-bean chat-bean--dark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <ellipse cx="12" cy="12" rx="6" ry="9" fill="#3a1a08"/>
+            <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#915E40" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          </svg>
+          <svg class="chat-bean chat-bean--light" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+            <ellipse cx="12" cy="12" rx="6" ry="9" fill="#c9a060"/>
+            <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#915E40" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Resultados Dinámicos (Derecha) -->
+  <main class="ia-results-main">
+    <div class="ia-active-filters" id="ia-chips">
+       <span class="ia-chip ia-chip-empty">Esperando instrucciones...</span>
+    </div>
+    <div id="results" class="ia-results-grid">
+      <div class="welcome-state">
+        <div class="welcome-title">¿Cómo te gustaría que sea tu café?</div>
+        <div class="welcome-subtitle">Contame qué sabores te gustan o cómo lo preparás, y te voy a sugerir las mejores opciones del catálogo.</div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script>
+  // Auto-expand textarea
+  const chatInput = document.getElementById('ia-chat-input');
+  if (chatInput) {
+    chatInput.addEventListener('input', function() {
+      this.style.height = 'auto';
+      this.style.height = (this.scrollHeight) + 'px';
+      if (this.scrollHeight > 150) {
+        this.style.overflowY = 'auto';
+        this.style.height = '150px';
+      } else {
+        this.style.overflowY = 'hidden';
+      }
+    });
+  }
+</script>
+{% endblock %}

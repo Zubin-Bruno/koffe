@@ -259,7 +259,7 @@ async def landing(request: Request):
     return templates.TemplateResponse("landing.html", {"request": request})
 
 
-@router.get("/explorar", response_class=HTMLResponse, include_in_schema=False)
+@router.get("/buscar", response_class=HTMLResponse, include_in_schema=False)
 async def index(
     request: Request,
     origin: list[str] = Query(default=[]),
@@ -275,6 +275,9 @@ async def index(
     brew_method: list[str] = Query(default=[]),
     search: str | None = None,
     tasting_note: list[str] = Query(default=[]),
+    include_incomplete: bool = Query(default=False),
+    min_price: str | None = None,
+    max_price: str | None = None,
     db: Session = Depends(get_db),
 ):
     roaster_id_int = [_parse_int(r) for r in roaster_id if _parse_int(r) is not None]
@@ -284,23 +287,33 @@ async def index(
     sweetness_max_int = _parse_int(sweetness_max)
     body_min_int = _parse_int(body_min)
     body_max_int = _parse_int(body_max)
+    min_price_int = _parse_int(min_price)
+    max_price_int = _parse_int(max_price)
 
     has_filters = _has_any_filter(
         origin, process, roaster_id_int, variety, brew_method,
         acidity_min_int, acidity_max_int, sweetness_min_int,
         sweetness_max_int, body_min_int, body_max_int, search,
         tasting_note,
-    )
+    ) or include_incomplete or min_price_int is not None or max_price_int is not None
 
     total_available = db.query(Coffee).filter(Coffee.is_available == True).count()
 
     if has_filters:
         q = db.query(Coffee).filter(Coffee.is_available == True)
+        if not include_incomplete:
+             pass
+             
         q = _apply_filters(q, origin, process, roaster_id_int,
                            acidity_min_int, acidity_max_int,
                            sweetness_min_int, sweetness_max_int,
                            body_min_int, body_max_int,
                            variety, brew_method, search, tasting_note)
+        if min_price_int is not None:
+            q = q.filter(Coffee.price_cents >= min_price_int * 100)
+        if max_price_int is not None:
+            q = q.filter(Coffee.price_cents <= max_price_int * 100)
+            
         coffees = q.order_by(Coffee.name).limit(200).all()
     else:
         coffees = []
@@ -328,12 +341,22 @@ async def index(
                 "brew_method": brew_method,
                 "search": search or "",
                 "tasting_notes": tasting_note,
+                "include_incomplete": include_incomplete,
             },
             "total": len(coffees),
             "total_available": total_available,
             "has_filters": has_filters,
         },
     )
+
+
+@router.get("/ia", response_class=HTMLResponse, include_in_schema=False)
+async def explore_ia(request: Request, db: Session = Depends(get_db)):
+    templates = request.app.state.templates
+    # Provide an initial empty result set or some popular ones.
+    # For now, we'll just send total count
+    total_available = db.query(Coffee).filter(Coffee.is_available == True).count()
+    return templates.TemplateResponse("explore_ia.html", {"request": request, "total_available": total_available})
 
 
 @router.get("/coffees", response_class=HTMLResponse, include_in_schema=False)
@@ -352,6 +375,9 @@ async def coffees_partial(
     brew_method: list[str] = Query(default=[]),
     search: str | None = None,
     tasting_note: list[str] = Query(default=[]),
+    include_incomplete: bool = Query(default=False),
+    min_price: str | None = None,
+    max_price: str | None = None,
     db: Session = Depends(get_db),
 ):
     """HTMX partial — returns only the coffee card grid."""
@@ -362,13 +388,15 @@ async def coffees_partial(
     sweetness_max_int = _parse_int(sweetness_max)
     body_min_int = _parse_int(body_min)
     body_max_int = _parse_int(body_max)
+    min_price_int = _parse_int(min_price)
+    max_price_int = _parse_int(max_price)
 
     has_filters = _has_any_filter(
         origin, process, roaster_id_int, variety, brew_method,
         acidity_min_int, acidity_max_int, sweetness_min_int,
         sweetness_max_int, body_min_int, body_max_int, search,
         tasting_note,
-    )
+    ) or include_incomplete or min_price_int is not None or max_price_int is not None
 
     if has_filters:
         q = db.query(Coffee).filter(Coffee.is_available == True)
@@ -377,6 +405,12 @@ async def coffees_partial(
                            sweetness_min_int, sweetness_max_int,
                            body_min_int, body_max_int,
                            variety, brew_method, search, tasting_note)
+                           
+        if min_price_int is not None:
+            q = q.filter(Coffee.price_cents >= min_price_int * 100)
+        if max_price_int is not None:
+            q = q.filter(Coffee.price_cents <= max_price_int * 100)
+            
         coffees = q.order_by(Coffee.name).limit(200).all()
     else:
         coffees = []
