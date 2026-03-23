@@ -80,13 +80,11 @@ def _apply_filters(q, origin, process, roaster_id_int, acidity_min_int,
     will match "Azúcar".
     """
     if origin:
-        q = q.filter(func.strip_accents(Coffee.origin_country).ilike(
-            f"%{_strip_accents(origin)}%"))
+        q = q.filter(or_(*[func.strip_accents(Coffee.origin_country).ilike(f"%{_strip_accents(o)}%") for o in origin]))
     if process:
-        q = q.filter(func.strip_accents(Coffee.process).ilike(
-            f"%{_strip_accents(process)}%"))
+        q = q.filter(or_(*[func.strip_accents(Coffee.process).ilike(f"%{_strip_accents(p)}%") for p in process]))
     if roaster_id_int:
-        q = q.filter(Coffee.roaster_id == roaster_id_int)
+        q = q.filter(Coffee.roaster_id.in_(roaster_id_int))
     if acidity_min_int:
         q = q.filter(Coffee.acidity >= acidity_min_int)
     if acidity_max_int:
@@ -100,11 +98,9 @@ def _apply_filters(q, origin, process, roaster_id_int, acidity_min_int,
     if body_max_int:
         q = q.filter(Coffee.body <= body_max_int)
     if variety:
-        q = q.filter(func.strip_accents(Coffee.variety).ilike(
-            f"%{_strip_accents(variety)}%"))
+        q = q.filter(or_(*[func.strip_accents(Coffee.variety).ilike(f"%{_strip_accents(v)}%") for v in variety]))
     if brew_method:
-        q = q.filter(func.strip_accents(cast(Coffee.brew_methods, String)).ilike(
-            f"%{_strip_accents(brew_method)}%"))
+        q = q.filter(or_(*[func.strip_accents(cast(Coffee.brew_methods, String)).ilike(f"%{_strip_accents(m)}%") for m in brew_method]))
     if search:
         term = f"%{_strip_accents(search)}%"
         q = q.filter(or_(
@@ -174,17 +170,17 @@ def _get_filter_options(db: Session) -> dict:
 
 @router.get("/api/coffees", tags=["coffees"])
 def list_coffees(
-    roaster_id: str | None = Query(None),
-    origin: str | None = Query(None),
-    process: str | None = Query(None),
+    roaster_id: list[str] = Query(default=[]),
+    origin: list[str] = Query(default=[]),
+    process: list[str] = Query(default=[]),
     acidity_min: str | None = Query(None),
     acidity_max: str | None = Query(None),
     sweetness_min: str | None = Query(None),
     sweetness_max: str | None = Query(None),
     body_min: str | None = Query(None),
     body_max: str | None = Query(None),
-    variety: str | None = Query(None),
-    brew_method: str | None = Query(None),
+    variety: list[str] = Query(default=[]),
+    brew_method: list[str] = Query(default=[]),
     search: str | None = Query(None),
     tasting_note: list[str] = Query(default=[]),
     available_only: str | None = Query(None),
@@ -194,7 +190,7 @@ def list_coffees(
     offset: int = Query(0),
     db: Session = Depends(get_db),
 ):
-    roaster_id_int = _parse_int(roaster_id)
+    roaster_id_int = [_parse_int(r) for r in roaster_id if _parse_int(r) is not None]
     acidity_min_int = _parse_int(acidity_min)
     acidity_max_int = _parse_int(acidity_max)
     sweetness_min_int = _parse_int(sweetness_min)
@@ -266,22 +262,22 @@ async def landing(request: Request):
 @router.get("/explorar", response_class=HTMLResponse, include_in_schema=False)
 async def index(
     request: Request,
-    origin: str | None = None,
-    process: str | None = None,
-    roaster_id: str | None = None,
+    origin: list[str] = Query(default=[]),
+    process: list[str] = Query(default=[]),
+    roaster_id: list[str] = Query(default=[]),
     acidity_min: str | None = None,
     acidity_max: str | None = None,
     sweetness_min: str | None = None,
     sweetness_max: str | None = None,
     body_min: str | None = None,
     body_max: str | None = None,
-    variety: str | None = None,
-    brew_method: str | None = None,
+    variety: list[str] = Query(default=[]),
+    brew_method: list[str] = Query(default=[]),
     search: str | None = None,
     tasting_note: list[str] = Query(default=[]),
     db: Session = Depends(get_db),
 ):
-    roaster_id_int = _parse_int(roaster_id)
+    roaster_id_int = [_parse_int(r) for r in roaster_id if _parse_int(r) is not None]
     acidity_min_int = _parse_int(acidity_min)
     acidity_max_int = _parse_int(acidity_max)
     sweetness_min_int = _parse_int(sweetness_min)
@@ -319,17 +315,17 @@ async def index(
             "coffees": [_coffee_to_dict(c) for c in coffees],
             **opts,
             "filters": {
-                "origin": origin or "",
-                "process": process or "",
-                "roaster_id": roaster_id_int or "",
+                "origin": origin,
+                "process": process,
+                "roaster_id": roaster_id_int,
                 "acidity_min": acidity_min_int or "",
                 "acidity_max": acidity_max_int or "",
                 "sweetness_min": sweetness_min_int or "",
                 "sweetness_max": sweetness_max_int or "",
                 "body_min": body_min_int or "",
                 "body_max": body_max_int or "",
-                "variety": variety or "",
-                "brew_method": brew_method or "",
+                "variety": variety,
+                "brew_method": brew_method,
                 "search": search or "",
                 "tasting_notes": tasting_note,
             },
@@ -343,23 +339,23 @@ async def index(
 @router.get("/coffees", response_class=HTMLResponse, include_in_schema=False)
 async def coffees_partial(
     request: Request,
-    origin: str | None = None,
-    process: str | None = None,
-    roaster_id: str | None = None,
+    origin: list[str] = Query(default=[]),
+    process: list[str] = Query(default=[]),
+    roaster_id: list[str] = Query(default=[]),
     acidity_min: str | None = None,
     acidity_max: str | None = None,
     sweetness_min: str | None = None,
     sweetness_max: str | None = None,
     body_min: str | None = None,
     body_max: str | None = None,
-    variety: str | None = None,
-    brew_method: str | None = None,
+    variety: list[str] = Query(default=[]),
+    brew_method: list[str] = Query(default=[]),
     search: str | None = None,
     tasting_note: list[str] = Query(default=[]),
     db: Session = Depends(get_db),
 ):
     """HTMX partial — returns only the coffee card grid."""
-    roaster_id_int = _parse_int(roaster_id)
+    roaster_id_int = [_parse_int(r) for r in roaster_id if _parse_int(r) is not None]
     acidity_min_int = _parse_int(acidity_min)
     acidity_max_int = _parse_int(acidity_max)
     sweetness_min_int = _parse_int(sweetness_min)
@@ -401,23 +397,23 @@ async def coffees_partial(
 async def compare_search(
     request: Request,
     slot: str = Query("0"),
-    origin: str | None = None,
-    process: str | None = None,
-    roaster_id: str | None = None,
+    origin: list[str] = Query(default=[]),
+    process: list[str] = Query(default=[]),
+    roaster_id: list[str] = Query(default=[]),
     acidity_min: str | None = None,
     acidity_max: str | None = None,
     sweetness_min: str | None = None,
     sweetness_max: str | None = None,
     body_min: str | None = None,
     body_max: str | None = None,
-    variety: str | None = None,
-    brew_method: str | None = None,
+    variety: list[str] = Query(default=[]),
+    brew_method: list[str] = Query(default=[]),
     search: str | None = None,
     tasting_note: list[str] = Query(default=[]),
     db: Session = Depends(get_db),
 ):
     """HTMX partial — filter form + card grid for one comparison slot."""
-    roaster_id_int = _parse_int(roaster_id)
+    roaster_id_int = [_parse_int(r) for r in roaster_id if _parse_int(r) is not None]
     acidity_min_int = _parse_int(acidity_min)
     acidity_max_int = _parse_int(acidity_max)
     sweetness_min_int = _parse_int(sweetness_min)
@@ -454,18 +450,19 @@ async def compare_search(
             "total": len(coffees),
             "has_filters": has_filters,
             "filters": {
-                "origin": origin or "",
-                "process": process or "",
-                "roaster_id": roaster_id_int or "",
+                "origin": origin,
+                "process": process,
+                "roaster_id": roaster_id_int,
                 "acidity_min": acidity_min_int or "",
                 "acidity_max": acidity_max_int or "",
                 "sweetness_min": sweetness_min_int or "",
                 "sweetness_max": sweetness_max_int or "",
                 "body_min": body_min_int or "",
                 "body_max": body_max_int or "",
-                "variety": variety or "",
-                "brew_method": brew_method or "",
+                "variety": variety,
+                "brew_method": brew_method,
                 "search": search or "",
+                "tasting_notes": tasting_note,
             },
             **opts,
         },

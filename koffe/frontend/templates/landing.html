@@ -24,7 +24,7 @@
     <!-- Background photo from Unsplash (overhead coffee cup, warm tones) -->
     <img
       class="hero-bg"
-      src="/static/hero.jpg.jpg"
+      src="/static/hero.jpg"
       alt=""
       aria-hidden="true"
     />
@@ -34,15 +34,15 @@
     <!-- Top-right: theme toggle + GitHub link -->
     <div class="hero-actions">
       <button class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema">
-        <!-- Dark roasted bean (shown when in dark mode) -->
-        <svg id="bean-dark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <!-- Dark roasted bean (shown when in light mode) -->
+        <svg id="bean-dark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
           <ellipse cx="12" cy="12" rx="6" ry="9" fill="#3a1a08"/>
-          <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#1a0a03" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#915E40" stroke-width="1.5" fill="none" stroke-linecap="round"/>
         </svg>
-        <!-- Light roasted bean (shown when in light mode) -->
-        <svg id="bean-light" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="20" height="20" aria-hidden="true">
+        <!-- Light roasted bean (shown when in dark mode) -->
+        <svg id="bean-light" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
           <ellipse cx="12" cy="12" rx="6" ry="9" fill="#c9a060"/>
-          <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#8a6030" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#915E40" stroke-width="1.5" fill="none" stroke-linecap="round"/>
         </svg>
       </button>
       <a class="hero-github" href="https://github.com/brunoamaral/koffe" target="_blank" rel="noopener">
@@ -88,8 +88,9 @@
       function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
-        beanDark.style.display  = theme === 'dark'  ? 'block' : 'none';
-        beanLight.style.display = theme === 'light' ? 'block' : 'none';
+        // light mode → show dark bean; dark mode → show light bean
+        beanDark.style.display  = theme === 'light' ? 'block' : 'none';
+        beanLight.style.display = theme === 'dark'  ? 'block' : 'none';
       }
 
       applyTheme(document.documentElement.getAttribute('data-theme') || 'light');

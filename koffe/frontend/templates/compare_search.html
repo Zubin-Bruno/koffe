@@ -9,131 +9,177 @@
     <input type="hidden" name="slot" value="{{ slot }}" />
 
     <div class="compare-filter-bar">
-      <label>
-        Tostador
-        <select name="roaster_id">
-          <option value="">Todos</option>
-          {% for r in roasters %}
-          <option value="{{ r.id }}" {% if filters.roaster_id|string == r.id|string %}selected{% endif %}>{{ r.name }}</option>
-          {% endfor %}
-        </select>
-      </label>
+      <div class="filter-group">
+        <div class="dropdown-check">
+          <button type="button" class="dropdown-check-toggle" onclick="toggleDropdown(this)">
+            <span>Tostador</span>
+            <span class="dropdown-count" style="display:none"></span>
+          </button>
+          <div class="dropdown-check-menu">
+            {% for r in roasters %}
+            <label class="note-checkbox">
+              <input type="checkbox" name="roaster_id" value="{{ r.id }}"
+                {% if r.id in filters.roaster_id %}checked{% endif %} />
+              <span>{{ r.name }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
 
-      <label>
-        Origen
-        <select name="origin">
-          <option value="">Todos</option>
-          {% for o in origins %}
-          <option value="{{ o }}" {% if filters.origin == o %}selected{% endif %}>{{ o }}</option>
-          {% endfor %}
-        </select>
-      </label>
+      <div class="filter-group">
+        <div class="dropdown-check">
+          <button type="button" class="dropdown-check-toggle" onclick="toggleDropdown(this)">
+            <span>Origen</span>
+            <span class="dropdown-count" style="display:none"></span>
+          </button>
+          <div class="dropdown-check-menu">
+            {% for o in origins %}
+            <label class="note-checkbox">
+              <input type="checkbox" name="origin" value="{{ o }}"
+                {% if o in filters.origin %}checked{% endif %} />
+              <span>{{ o }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
 
-      <label>
-        Proceso
-        <select name="process">
-          <option value="">Todos</option>
-          {% for p in processes %}
-          <option value="{{ p }}" {% if filters.process == p %}selected{% endif %}>{{ p }}</option>
-          {% endfor %}
-        </select>
-      </label>
+      <div class="filter-group">
+        <div class="dropdown-check">
+          <button type="button" class="dropdown-check-toggle" onclick="toggleDropdown(this)">
+            <span>Proceso</span>
+            <span class="dropdown-count" style="display:none"></span>
+          </button>
+          <div class="dropdown-check-menu">
+            {% for p in processes %}
+            <label class="note-checkbox">
+              <input type="checkbox" name="process" value="{{ p }}"
+                {% if p in filters.process %}checked{% endif %} />
+              <span>{{ p }}</span>
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
 
-      <label class="compare-filter-search">
-        Buscar
-        <input type="text" name="search" placeholder="Nombre, notas..."
+      <div class="compare-filter-search filter-group">
+        <input type="text" name="search" placeholder="Buscar..."
                value="{{ filters.search }}"
                hx-get="/coffees/compare-search"
                hx-target="#compare-slot-{{ slot }}"
                hx-trigger="input changed delay:400ms"
                hx-include="closest form"
                hx-swap="innerHTML" />
-      </label>
+      </div>
 
-      <button type="button" class="compare-more-btn" onclick="this.closest('form').querySelector('.compare-filter-advanced').classList.toggle('is-open'); this.classList.toggle('is-active');">
+      <button type="button" class="compare-more-btn is-active" onclick="var panel = this.closest('form').querySelector('.compare-filter-advanced'); panel.classList.toggle('is-open'); this.classList.toggle('is-active'); var text = this.querySelector('.compare-more-text'); if (this.classList.contains('is-active')) { text.textContent = 'Menos'; } else { text.textContent = 'Más'; }">
         <span class="filter-toggle-icon">+</span>
-        Más
+        <span class="compare-more-text">Menos</span>
       </button>
     </div>
 
-    <div class="compare-filter-advanced">
+    <div class="compare-filter-advanced is-open">
       <div class="compare-filter-advanced-grid">
-        <label>
-          Variedad
-          <select name="variety">
-            <option value="">Todos</option>
-            {% for v in varieties %}
-            <option value="{{ v }}" {% if filters.variety == v %}selected{% endif %}>{{ v }}</option>
-            {% endfor %}
-          </select>
-        </label>
-
-        <label>
-          Método
-          <select name="brew_method">
-            <option value="">Todos</option>
-            {% for m in brew_methods_options %}
-            <option value="{{ m }}" {% if filters.brew_method == m %}selected{% endif %}>{{ m }}</option>
-            {% endfor %}
-          </select>
-        </label>
-
-        <label>
-          Acidez
-          <div class="filter-range">
-            <select name="acidity_min" class="filter-narrow">
-              <option value="">Min</option>
-              {% for i in range(1, 6) %}
-              <option value="{{ i }}" {% if filters.acidity_min|string == i|string %}selected{% endif %}>{{ i }}</option>
+        <div class="filter-group">
+          <div class="dropdown-check">
+            <button type="button" class="dropdown-check-toggle" onclick="toggleDropdown(this)">
+              <span>Variedad</span>
+              <span class="dropdown-count" style="display:none"></span>
+            </button>
+            <div class="dropdown-check-menu">
+              {% for v in varieties %}
+              <label class="note-checkbox">
+                <input type="checkbox" name="variety" value="{{ v }}"
+                  {% if v in filters.variety %}checked{% endif %} />
+                <span>{{ v }}</span>
+              </label>
               {% endfor %}
-            </select>
-            <span class="range-dash">—</span>
-            <select name="acidity_max" class="filter-narrow">
-              <option value="">Max</option>
-              {% for i in range(1, 6) %}
-              <option value="{{ i }}" {% if filters.acidity_max|string == i|string %}selected{% endif %}>{{ i }}</option>
-              {% endfor %}
-            </select>
+            </div>
           </div>
-        </label>
+        </div>
 
-        <label>
-          Dulzor
-          <div class="filter-range">
-            <select name="sweetness_min" class="filter-narrow">
-              <option value="">Min</option>
-              {% for i in range(1, 6) %}
-              <option value="{{ i }}" {% if filters.sweetness_min|string == i|string %}selected{% endif %}>{{ i }}</option>
+        <div class="filter-group">
+          <div class="dropdown-check">
+            <button type="button" class="dropdown-check-toggle" onclick="toggleDropdown(this)">
+              <span>Método</span>
+              <span class="dropdown-count" style="display:none"></span>
+            </button>
+            <div class="dropdown-check-menu">
+              {% for m in brew_methods_options %}
+              <label class="note-checkbox">
+                <input type="checkbox" name="brew_method" value="{{ m }}"
+                  {% if m in filters.brew_method %}checked{% endif %} />
+                <span>{{ m }}</span>
+              </label>
               {% endfor %}
-            </select>
-            <span class="range-dash">—</span>
-            <select name="sweetness_max" class="filter-narrow">
-              <option value="">Max</option>
-              {% for i in range(1, 6) %}
-              <option value="{{ i }}" {% if filters.sweetness_max|string == i|string %}selected{% endif %}>{{ i }}</option>
-              {% endfor %}
-            </select>
+            </div>
           </div>
-        </label>
+        </div>
 
-        <label>
-          Cuerpo
-          <div class="filter-range">
-            <select name="body_min" class="filter-narrow">
-              <option value="">Min</option>
-              {% for i in range(1, 6) %}
-              <option value="{{ i }}" {% if filters.body_min|string == i|string %}selected{% endif %}>{{ i }}</option>
-              {% endfor %}
-            </select>
-            <span class="range-dash">—</span>
-            <select name="body_max" class="filter-narrow">
-              <option value="">Max</option>
-              {% for i in range(1, 6) %}
-              <option value="{{ i }}" {% if filters.body_max|string == i|string %}selected{% endif %}>{{ i }}</option>
-              {% endfor %}
-            </select>
+        <div class="filter-group filter-group--full-width">
+          <div class="filter-intensity-grid">
+            <div class="filter-group">
+              Acidez
+              <div class="range-slider">
+                <div class="range-slider-ticks">
+                  <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                </div>
+                <div class="range-slider-track"></div>
+                <div class="range-slider-fill"></div>
+                <input type="range" class="min-input" min="1" max="5" value="{{ filters.acidity_min or 1 }}">
+                <input type="range" class="max-input" min="1" max="5" value="{{ filters.acidity_max or 5 }}">
+                <input type="hidden" name="acidity_min" class="hidden-min" value="{{ filters.acidity_min or '' }}">
+                <input type="hidden" name="acidity_max" class="hidden-max" value="{{ filters.acidity_max or '' }}">
+                <div class="range-slider-values">
+                  <span class="min-val"></span>
+                  <span class="val-sep">—</span>
+                  <span class="max-val"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="filter-group">
+              Dulzor
+              <div class="range-slider">
+                <div class="range-slider-ticks">
+                  <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                </div>
+                <div class="range-slider-track"></div>
+                <div class="range-slider-fill"></div>
+                <input type="range" class="min-input" min="1" max="5" value="{{ filters.sweetness_min or 1 }}">
+                <input type="range" class="max-input" min="1" max="5" value="{{ filters.sweetness_max or 5 }}">
+                <input type="hidden" name="sweetness_min" class="hidden-min" value="{{ filters.sweetness_min or '' }}">
+                <input type="hidden" name="sweetness_max" class="hidden-max" value="{{ filters.sweetness_max or '' }}">
+                <div class="range-slider-values">
+                  <span class="min-val"></span>
+                  <span class="val-sep">—</span>
+                  <span class="max-val"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="filter-group">
+              Cuerpo
+              <div class="range-slider">
+                <div class="range-slider-ticks">
+                  <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span>
+                </div>
+                <div class="range-slider-track"></div>
+                <div class="range-slider-fill"></div>
+                <input type="range" class="min-input" min="1" max="5" value="{{ filters.body_min or 1 }}">
+                <input type="range" class="max-input" min="1" max="5" value="{{ filters.body_max or 5 }}">
+                <input type="hidden" name="body_min" class="hidden-min" value="{{ filters.body_min or '' }}">
+                <input type="hidden" name="body_max" class="hidden-max" value="{{ filters.body_max or '' }}">
+                <div class="range-slider-values">
+                  <span class="min-val"></span>
+                  <span class="val-sep">—</span>
+                  <span class="max-val"></span>
+                </div>
+              </div>
+            </div>
           </div>
-        </label>
+        </div>
       </div>
     </div>
   </form>

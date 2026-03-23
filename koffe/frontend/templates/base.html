@@ -19,19 +19,18 @@
   <header>
     <a href="/" class="logo">Koffe</a>
     <nav class="header-nav">
-      <a href="/explorar">Explorar</a>
     </nav>
-    <!-- Theme toggle: dark roasted bean = dark mode, light roasted bean = light mode -->
+    <!-- Theme toggle: light roasted bean = dark mode, dark roasted bean = light mode (for contrast) -->
     <button class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema">
-      <!-- Dark roasted bean (shown when in dark mode) -->
-      <svg id="bean-dark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <!-- Dark roasted bean (shown when in light mode) -->
+      <svg id="bean-dark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
         <ellipse cx="12" cy="12" rx="6" ry="9" fill="#3a1a08"/>
-        <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#1a0a03" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#915E40" stroke-width="1.5" fill="none" stroke-linecap="round"/>
       </svg>
-      <!-- Light roasted bean (shown when in light mode) -->
-      <svg id="bean-light" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="22" height="22" aria-hidden="true">
+      <!-- Light roasted bean (shown when in dark mode) -->
+      <svg id="bean-light" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
         <ellipse cx="12" cy="12" rx="6" ry="9" fill="#c9a060"/>
-        <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#8a6030" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#915E40" stroke-width="1.5" fill="none" stroke-linecap="round"/>
       </svg>
     </button>
   </header>
@@ -51,9 +50,9 @@
       function applyTheme(theme) {
         document.documentElement.setAttribute('data-theme', theme);
         localStorage.setItem('theme', theme);
-        // dark mode → show dark bean; light mode → show light bean
-        beanDark.style.display  = theme === 'dark'  ? 'block' : 'none';
-        beanLight.style.display = theme === 'light' ? 'block' : 'none';
+        // light mode → show dark bean; dark mode → show light bean
+        beanDark.style.display  = theme === 'light' ? 'block' : 'none';
+        beanLight.style.display = theme === 'dark'  ? 'block' : 'none';
       }
 
       // Initialise icons based on the theme already set in <head>
@@ -323,7 +322,129 @@
 
     // Expose globally so buttons can call it
     window.openCompare = openCompare;
-  })();
-  </script>
-</body>
-</html>
+    })();
+    </script>
+    <script>
+    // ── Range Sliders ───────────────────────────────────────────
+    function initRangeSliders(container) {
+    if (!container) container = document;
+    container.querySelectorAll('.range-slider').forEach(function(slider) {
+      if (slider.dataset.initialized) return;
+      slider.dataset.initialized = 'true';
+
+      var minInput = slider.querySelector('.min-input');
+      var maxInput = slider.querySelector('.max-input');
+      var fill = slider.querySelector('.range-slider-fill');
+      var minVal = slider.querySelector('.min-val');
+      var maxVal = slider.querySelector('.max-val');
+      var hiddenMin = slider.querySelector('.hidden-min');
+      var hiddenMax = slider.querySelector('.hidden-max');
+
+      function update(changedInput) {
+        var min = parseInt(minInput.value);
+        var max = parseInt(maxInput.value);
+
+        if (min > max) {
+          if (changedInput === minInput) {
+            minInput.value = max;
+            min = max;
+          } else {
+            maxInput.value = min;
+            max = min;
+          }
+        }
+
+        var percentMin = ((min - 1) / 4) * 100;
+        var percentMax = ((max - 1) / 4) * 100;
+
+        fill.style.left = percentMin + '%';
+        fill.style.width = (percentMax - percentMin) + '%';
+
+        var sep = slider.querySelector('.val-sep');
+        if (min === 1 && max === 5) {
+          minVal.textContent = 'Todos';
+          maxVal.textContent = '';
+          if (sep) sep.style.display = 'none';
+          hiddenMin.value = '';
+          hiddenMax.value = '';
+        } else {
+          minVal.textContent = min;
+          maxVal.textContent = max;
+          if (sep) sep.style.display = '';
+          hiddenMin.value = min;
+          hiddenMax.value = max;
+        }
+      }
+
+      minInput.addEventListener('input', function() { update(minInput); });
+      maxInput.addEventListener('input', function() { update(maxInput); });
+
+      minInput.addEventListener('change', function() {
+        var ev = new Event('change', { bubbles: true });
+        hiddenMin.dispatchEvent(ev);
+      });
+      maxInput.addEventListener('change', function() {
+        var ev = new Event('change', { bubbles: true });
+        hiddenMax.dispatchEvent(ev);
+      });
+
+      update(null);
+    });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+    initRangeSliders(document);
+    });
+    document.body.addEventListener('htmx:load', function(evt) {
+    initRangeSliders(evt.detail.elt);
+    });
+
+    // ── Dropdown Checkboxes ─────────────────────────────────────
+    function toggleDropdown(btn) {
+      var menu = btn.nextElementSibling;
+      var isOpen = menu.classList.contains('is-open');
+      document.querySelectorAll('.dropdown-check-menu').forEach(function(m) {
+        m.classList.remove('is-open');
+      });
+      if (!isOpen) {
+        menu.classList.add('is-open');
+      }
+    }
+
+    document.addEventListener('click', function(e) {
+      if (!e.target.closest('.dropdown-check')) {
+        document.querySelectorAll('.dropdown-check-menu').forEach(function(m) {
+          m.classList.remove('is-open');
+        });
+      }
+    });
+
+    function updateDropdownCounts(container) {
+      if (!container) container = document;
+      container.querySelectorAll('.dropdown-check').forEach(function(dropdown) {
+        var countSpan = dropdown.querySelector('.dropdown-count');
+        if (!countSpan) return;
+        var checked = dropdown.querySelectorAll('input[type="checkbox"]:checked').length;
+        if (checked > 0) {
+          countSpan.textContent = checked;
+          countSpan.style.display = 'inline-block';
+        } else {
+          countSpan.style.display = 'none';
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      updateDropdownCounts(document);
+      document.body.addEventListener('change', function(e) {
+        if (e.target.closest('.dropdown-check')) {
+          updateDropdownCounts(document);
+        }
+      });
+    });
+    document.body.addEventListener('htmx:load', function(evt) {
+      updateDropdownCounts(evt.detail.elt);
+    });
+    </script>
+    </body>
+    </html>
