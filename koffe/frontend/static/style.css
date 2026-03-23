@@ -2210,7 +2210,7 @@ body.card-expanded-open { overflow: hidden; }
 }
 
 .search-sidebar {
-  flex: 0 0 280px;
+  flex: 0 0 360px;
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -2322,7 +2322,7 @@ body.card-expanded-open { overflow: hidden; }
 }
 
 .ia-chat-sidebar {
-  flex: 0 0 350px;
+  flex: 0 0 440px;
   display: flex;
   flex-direction: column;
   background: var(--surface);
