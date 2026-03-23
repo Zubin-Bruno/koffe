@@ -128,6 +128,11 @@ main {
   width: 100%;
 }
 
+main:has(.search-layout),
+main:has(.ia-layout) {
+  max-width: 1800px;
+}
+
 /* ── Explorer header ─────────────────────────────────────── */
 .explorer-header {
   margin-bottom: 1.5rem;
@@ -2210,7 +2215,7 @@ body.card-expanded-open { overflow: hidden; }
 }
 
 .search-sidebar {
-  flex: 0 0 360px;
+  flex: 0 0 clamp(360px, 22vw, 480px);
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
@@ -2311,6 +2316,7 @@ body.card-expanded-open { overflow: hidden; }
 .search-main {
   flex: 1;
   min-width: 0;
+  max-width: 1200px;
 }
 
 /* IA Layout (Split View) */
@@ -2322,7 +2328,7 @@ body.card-expanded-open { overflow: hidden; }
 }
 
 .ia-chat-sidebar {
-  flex: 0 0 440px;
+  flex: 0 0 clamp(440px, 26vw, 560px);
   display: flex;
   flex-direction: column;
   background: var(--surface);
