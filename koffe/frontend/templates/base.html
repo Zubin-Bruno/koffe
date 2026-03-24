@@ -465,6 +465,31 @@
         group.setAttribute('data-collapsed', '');
       }
     });
+
+    // ── Synchronized scroll: sidebar wheel → page scrolls proportionally ──
+    (function () {
+      var RATIO = 0.3;
+
+      function attach() {
+        var sidebar = document.querySelector('.search-sidebar');
+        if (!sidebar) return;
+
+        sidebar.addEventListener('wheel', function (e) {
+          if (window.innerWidth <= 900) return;  // skip mobile
+
+          var atTop    = sidebar.scrollTop <= 0;
+          var atBottom = sidebar.scrollTop + sidebar.clientHeight >= sidebar.scrollHeight - 1;
+
+          if (e.deltaY < 0 && atTop)    return;  // at top, let browser handle
+          if (e.deltaY > 0 && atBottom) return;  // at bottom, let browser handle
+
+          window.scrollBy({ top: e.deltaY * RATIO });
+        }, { passive: true });
+      }
+
+      attach();
+      document.body.addEventListener('htmx:load', attach);
+    })();
     </script>
     </body>
     </html>
