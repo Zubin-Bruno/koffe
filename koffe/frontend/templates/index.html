@@ -34,7 +34,7 @@
         </div>
 
         <!-- Tostador -->
-        <div class="sidebar-group">
+        <div class="sidebar-group" data-collapsible>
           <label class="sidebar-label">Tostador</label>
           <div class="sidebar-checkboxes scrollable-list">
             {% for r in roasters %}
@@ -47,7 +47,7 @@
         </div>
 
         <!-- Origen -->
-        <div class="sidebar-group">
+        <div class="sidebar-group" data-collapsible>
           <label class="sidebar-label">Origen</label>
           <div class="sidebar-checkboxes scrollable-list">
             {% for o in origins %}
@@ -60,7 +60,7 @@
         </div>
 
         <!-- Método -->
-        <div class="sidebar-group">
+        <div class="sidebar-group" data-collapsible>
           <label class="sidebar-label">Método</label>
           <div class="sidebar-checkboxes scrollable-list">
             {% for m in brew_methods_options %}
@@ -73,7 +73,7 @@
         </div>
 
         <!-- Variedad -->
-        <div class="sidebar-group">
+        <div class="sidebar-group" data-collapsible data-collapsed>
           <label class="sidebar-label">Variedad</label>
           <div class="sidebar-checkboxes scrollable-list">
             {% for v in varieties %}
@@ -86,7 +86,7 @@
         </div>
 
         <!-- Proceso -->
-        <div class="sidebar-group">
+        <div class="sidebar-group" data-collapsible>
           <label class="sidebar-label">Proceso</label>
           <div class="sidebar-checkboxes scrollable-list">
             {% for p in processes %}
@@ -163,7 +163,7 @@
         </div>
         
         <!-- Notas de Cata -->
-        <div class="sidebar-group">
+        <div class="sidebar-group" data-collapsible data-collapsed>
           <label class="sidebar-label">Notas de cata</label>
           <div class="sidebar-checkboxes scrollable-list notes-grid">
             {% for n in tasting_notes_options %}

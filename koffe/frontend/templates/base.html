@@ -453,6 +453,18 @@
     document.body.addEventListener('htmx:load', function(evt) {
       updateDropdownCounts(evt.detail.elt);
     });
+
+    // ── Collapsible sidebar sections ─────────────────────────────
+    document.addEventListener('click', function(e) {
+      var label = e.target.closest('.sidebar-group[data-collapsible] .sidebar-label');
+      if (!label) return;
+      var group = label.closest('.sidebar-group');
+      if (group.hasAttribute('data-collapsed')) {
+        group.removeAttribute('data-collapsed');
+      } else {
+        group.setAttribute('data-collapsed', '');
+      }
+    });
     </script>
     </body>
     </html>

@@ -2294,6 +2294,29 @@ body.card-expanded-open { overflow: hidden; }
   border-color: var(--accent);
 }
 
+/* Collapsible sidebar sections */
+.sidebar-group[data-collapsible] .sidebar-label {
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sidebar-group[data-collapsible] .sidebar-label::after {
+  content: '▾';
+  font-size: 0.75rem;
+  transition: transform 0.2s ease;
+}
+
+.sidebar-group[data-collapsed] .sidebar-label::after {
+  transform: rotate(-90deg);
+}
+
+.sidebar-group[data-collapsed] > .sidebar-checkboxes,
+.sidebar-group[data-collapsed] > .sidebar-intensity-grid {
+  display: none;
+}
+
 .sidebar-checkboxes {
   display: flex;
   flex-direction: column;
