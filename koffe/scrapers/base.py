@@ -19,9 +19,9 @@ class CoffeeData:
     origin_country: str | None = None
     process: str | None = None
     roast_level: str | None = None
-    acidity: int | None = None    # 1–5
-    sweetness: int | None = None  # 1–5
-    body: int | None = None       # 1–5
+    acidity: float | None = None    # 1–5
+    sweetness: float | None = None  # 1–5
+    body: float | None = None       # 1–5
     variety: str | None = None
     altitude_masl: int | None = None
     brew_methods: list[str] | None = None

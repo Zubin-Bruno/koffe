@@ -17,6 +17,7 @@ dependencies = [
     "pydantic>=2.5",
     "python-dotenv>=1.0",
     "loguru>=0.7",
+    "anthropic>=0.40",
 ]
 
 [build-system]

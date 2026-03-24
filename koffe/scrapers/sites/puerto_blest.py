@@ -17,6 +17,7 @@ from koffe.scrapers.utils import (
     parse_price_cents,
     parse_weight_grams,
 )
+from koffe.scrapers.vision import extract_intensities_from_image
 
 BASE_URL = "https://www.cafepuertoblest.com"
 
@@ -178,17 +179,23 @@ class PuertoBlestScraper(BaseScraper):
         if not weight_grams:
             weight_grams = 250  # all products default to 250g
 
-        # Image
-        image_node = tree.css_first(".js-product-slide-img, .product-image img")
-        image_url = None
-        if image_node:
-            image_url = (
-                image_node.attributes.get("src")
-                or image_node.attributes.get("data-src")
-                or image_node.attributes.get("data-lazy")
+        # Images — collect ALL product images (not just the first).
+        # First image = product photo (used for image_url).
+        # Last image  = coffee card with bar charts (sent to vision API).
+        image_nodes = tree.css(".js-product-slide-img, .product-image img")
+        all_image_urls: list[str] = []
+        for img in image_nodes:
+            src = (
+                img.attributes.get("src")
+                or img.attributes.get("data-src")
+                or img.attributes.get("data-lazy")
             )
-            if image_url and image_url.startswith("//"):
-                image_url = "https:" + image_url
+            if src:
+                if src.startswith("//"):
+                    src = "https:" + src
+                all_image_urls.append(src)
+
+        image_url = all_image_urls[0] if all_image_urls else None
 
         # Description
         desc_node = tree.css_first(".product-description, .js-product-description")
@@ -215,6 +222,20 @@ class PuertoBlestScraper(BaseScraper):
         if tasting_notes:
             attributes["tasting_notes"] = tasting_notes
 
+        # Vision — extract acidity/body/sweetness from the coffee card image.
+        # Only attempt if there are 2+ images (the last one is the card).
+        acidity = None
+        body = None
+        sweetness = None
+        if len(all_image_urls) >= 2:
+            card_url = all_image_urls[-1]
+            logger.debug(f"[puerto-blest] Sending coffee card to vision: {card_url}")
+            intensities = await extract_intensities_from_image(card_url)
+            acidity = intensities["acidity"]
+            body = intensities["body"]
+            sweetness = intensities["sweetness"]
+            logger.info(f"[puerto-blest] Vision: acidity={acidity}, body={body}, sweetness={sweetness}")
+
         logger.debug(f"[puerto-blest] Scraped: {name} | {price_cents} ARS-cents | {origin_country}")
 
         return CoffeeData(
@@ -231,6 +252,9 @@ class PuertoBlestScraper(BaseScraper):
             process=process,
             variety=variety,
             altitude_masl=altitude_masl,
+            acidity=acidity,
+            body=body,
+            sweetness=sweetness,
             brew_methods=brew_methods,
             attributes=attributes,
         )
