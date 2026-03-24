@@ -466,24 +466,54 @@
       }
     });
 
-    // ── Synchronized scroll: sidebar wheel → page scrolls proportionally ──
+    // ── Synchronized scroll: sidebar wheel → page scrolls smoothly ──
     (function () {
-      var RATIO = 0.3;
+      var RATIO = 0.3;       // how much page moves vs sidebar
+      var EASE  = 0.12;      // lerp factor per frame (0.1 = silky, 0.2 = snappy)
+      var EPSILON = 0.5;     // stop animating below this threshold (px)
+
+      var target  = 0;       // accumulated target offset
+      var current = 0;       // where we actually are
+      var ticking = false;   // is rAF loop running?
+
+      function animate() {
+        current += (target - current) * EASE;
+
+        if (Math.abs(target - current) < EPSILON) {
+          // Close enough — snap and stop the loop
+          window.scrollBy(0, target - current);
+          target = 0;
+          current = 0;
+          ticking = false;
+          return;
+        }
+
+        var step = current;   // how much to scroll this frame
+        current = 0;
+        target -= step;
+        window.scrollBy(0, step);
+
+        requestAnimationFrame(animate);
+      }
 
       function attach() {
         var sidebar = document.querySelector('.search-sidebar');
         if (!sidebar) return;
 
         sidebar.addEventListener('wheel', function (e) {
-          if (window.innerWidth <= 900) return;  // skip mobile
+          if (window.innerWidth <= 900) return;
 
           var atTop    = sidebar.scrollTop <= 0;
           var atBottom = sidebar.scrollTop + sidebar.clientHeight >= sidebar.scrollHeight - 1;
+          if (e.deltaY < 0 && atTop)    return;
+          if (e.deltaY > 0 && atBottom) return;
 
-          if (e.deltaY < 0 && atTop)    return;  // at top, let browser handle
-          if (e.deltaY > 0 && atBottom) return;  // at bottom, let browser handle
+          target += e.deltaY * RATIO;
 
-          window.scrollBy({ top: e.deltaY * RATIO });
+          if (!ticking) {
+            ticking = true;
+            requestAnimationFrame(animate);
+          }
         }, { passive: true });
       }
 
