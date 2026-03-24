@@ -72,6 +72,19 @@
           </div>
         </div>
 
+        <!-- Variedad -->
+        <div class="sidebar-group">
+          <label class="sidebar-label">Variedad</label>
+          <div class="sidebar-checkboxes scrollable-list">
+            {% for v in varieties %}
+            <label class="note-checkbox">
+              <span>{{ v }}</span>
+              <input type="checkbox" name="variety" value="{{ v }}" {% if v in filters.variety %}checked{% endif %} />
+            </label>
+            {% endfor %}
+          </div>
+        </div>
+
         <!-- Proceso -->
         <div class="sidebar-group">
           <label class="sidebar-label">Proceso</label>
@@ -152,7 +165,7 @@
         <!-- Notas de Cata -->
         <div class="sidebar-group">
           <label class="sidebar-label">Notas de cata</label>
-          <div class="sidebar-checkboxes scrollable-list notes-grid" style="max-height: 200px;">
+          <div class="sidebar-checkboxes scrollable-list notes-grid">
             {% for n in tasting_notes_options %}
             <label class="note-checkbox">
               <span>{{ n }}</span>

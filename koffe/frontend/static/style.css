@@ -2305,14 +2305,8 @@ body.card-expanded-open { overflow: hidden; }
   gap: 0.2rem 0.5rem;
 }
 .scrollable-list {
-  max-height: 200px;
-  overflow-y: auto;
-  scrollbar-width: thin;
-  scrollbar-color: var(--border) transparent;
+  /* No individual scroll — the sidebar handles all scrolling */
 }
-.scrollable-list::-webkit-scrollbar { width: 6px; }
-.scrollable-list::-webkit-scrollbar-track { background: transparent; }
-.scrollable-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
 
 .sidebar-intensity-grid {
   display: flex;
