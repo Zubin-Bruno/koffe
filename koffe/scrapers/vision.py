@@ -1,9 +1,9 @@
 """
-Vision helper — extracts intensity values from coffee-card images using Claude.
+Vision helper — extracts intensity values from coffee-card images using Pixtral via OpenRouter.
 
 Puerto Blest (and potentially other roasters) embed acidity / body / sweetness
 data in product images rather than in HTML.  This module sends those images to
-Claude's Vision API and parses the response into numeric values.
+OpenRouter's Pixtral Vision API and parses the response into numeric values.
 
 Usage:
     from koffe.scrapers.vision import extract_intensities_from_image
@@ -22,21 +22,18 @@ import httpx
 from loguru import logger
 
 # ---------------------------------------------------------------------------
-# Lazy client — only created when actually needed (avoids import-time errors
-# if the key isn't set and vision is never called).
+# OpenRouter API configuration
 # ---------------------------------------------------------------------------
-_client = None
+OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_MODEL = "mistralai/pixtral-large-2411"  # Vision model, great for charts
 
 
-def _get_client():
-    global _client
-    if _client is None:
-        api_key = os.getenv("ANTHROPIC_API_KEY")
-        if not api_key:
-            raise RuntimeError("ANTHROPIC_API_KEY is not set")
-        import anthropic
-        _client = anthropic.Anthropic(api_key=api_key)
-    return _client
+def _get_api_key():
+    """Get OpenRouter API key from environment."""
+    api_key = os.getenv("OPENROUTER_API_KEY")
+    if not api_key:
+        raise RuntimeError("OPENROUTER_API_KEY is not set")
+    return api_key
 
 
 # ---------------------------------------------------------------------------
@@ -93,8 +90,8 @@ async def extract_intensities_from_image(
     empty: dict[str, float | None] = {"acidity": None, "body": None, "sweetness": None}
 
     # --- 1. Check for API key early ---
-    if not os.getenv("ANTHROPIC_API_KEY"):
-        logger.warning("[vision] ANTHROPIC_API_KEY not set — skipping image analysis")
+    if not os.getenv("OPENROUTER_API_KEY"):
+        logger.warning("[vision] OPENROUTER_API_KEY not set — skipping image analysis")
         return empty
 
     # --- 2. Download image ---
@@ -118,35 +115,44 @@ async def extract_intensities_from_image(
 
     image_b64 = base64.standard_b64encode(image_bytes).decode("ascii")
 
-    # --- 3. Call Claude Vision ---
+    # --- 3. Call OpenRouter Vision API (Pixtral) ---
     try:
-        client = _get_client()
-        message = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=256,
-            messages=[
-                {
-                    "role": "user",
-                    "content": [
+        api_key = _get_api_key()
+        async with httpx.AsyncClient(timeout=60) as http:
+            response = await http.post(
+                OPENROUTER_API_URL,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://github.com/cafecito-project",  # Optional, helps OpenRouter track usage
+                },
+                json={
+                    "model": OPENROUTER_MODEL,
+                    "messages": [
                         {
-                            "type": "image",
-                            "source": {
-                                "type": "base64",
-                                "media_type": media_type,
-                                "data": image_b64,
-                            },
-                        },
-                        {
-                            "type": "text",
-                            "text": _VISION_PROMPT,
-                        },
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:{media_type};base64,{image_b64}",
+                                    },
+                                },
+                                {
+                                    "type": "text",
+                                    "text": _VISION_PROMPT,
+                                },
+                            ],
+                        }
                     ],
-                }
-            ],
-        )
-        raw_text = message.content[0].text.strip()
+                    "max_tokens": 256,
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            raw_text = data["choices"][0]["message"]["content"].strip()
     except Exception as exc:
-        logger.warning(f"[vision] Claude API call failed: {exc}")
+        logger.warning(f"[vision] OpenRouter API call failed: {exc}")
         return empty
 
     # --- 4. Parse JSON response ---
