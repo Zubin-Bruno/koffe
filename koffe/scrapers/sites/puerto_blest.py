@@ -141,6 +141,21 @@ class PuertoBlestScraper(BaseScraper):
         try:
             await page.goto(url, wait_until="networkidle", timeout=60000)
 
+            # Scroll the page to trigger lazy-loading of images.
+            # The site uses on-scroll observers that swap placeholder GIFs
+            # for real image URLs only when the user scrolls down.
+            await page.evaluate("""
+                async () => {
+                    const delay = ms => new Promise(r => setTimeout(r, ms));
+                    for (let y = 0; y < document.body.scrollHeight; y += 300) {
+                        window.scrollTo(0, y);
+                        await delay(100);
+                    }
+                    window.scrollTo(0, 0);
+                }
+            """)
+            await page.wait_for_timeout(1000)
+
             # Check availability via the add-to-cart button (Playwright, before closing)
             # Tiendanube hides a "Sin stock" label in the template even for available products,
             # so we check whether the cart button is present and not disabled.
@@ -149,6 +164,24 @@ class PuertoBlestScraper(BaseScraper):
                 await add_btn.count() > 0
                 and await add_btn.first.is_enabled()
             )
+
+            # Extract image URLs from the live DOM (before closing the page).
+            # The carousel wraps each image in an <a class="js-product-slide-link">
+            # whose href always points to the full-res image — even when the <img>
+            # itself still shows a lazy-load placeholder GIF.
+            all_image_urls = await page.evaluate("""
+                () => {
+                    const links = document.querySelectorAll('.js-product-slide-link');
+                    const urls = [];
+                    for (const link of links) {
+                        let url = link.href;
+                        if (!url || url.includes('data:image')) continue;
+                        if (url.startsWith('//')) url = 'https:' + url;
+                        urls.push(url);
+                    }
+                    return urls;
+                }
+            """)
 
             html = await page.content()
         finally:
@@ -178,22 +211,6 @@ class PuertoBlestScraper(BaseScraper):
                 break
         if not weight_grams:
             weight_grams = 250  # all products default to 250g
-
-        # Images — collect ALL product images (not just the first).
-        # First image = product photo (used for image_url).
-        # Last image  = coffee card with bar charts (sent to vision API).
-        image_nodes = tree.css(".js-product-slide-img, .product-image img")
-        all_image_urls: list[str] = []
-        for img in image_nodes:
-            src = (
-                img.attributes.get("src")
-                or img.attributes.get("data-src")
-                or img.attributes.get("data-lazy")
-            )
-            if src:
-                if src.startswith("//"):
-                    src = "https:" + src
-                all_image_urls.append(src)
 
         image_url = all_image_urls[0] if all_image_urls else None
 
