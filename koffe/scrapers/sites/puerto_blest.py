@@ -239,19 +239,20 @@ class PuertoBlestScraper(BaseScraper):
         if tasting_notes:
             attributes["tasting_notes"] = tasting_notes
 
-        # Vision — extract acidity/body/sweetness from the coffee card image.
-        # Only attempt if there are 2+ images (the last one is the card).
+        # Vision — extract acidity/body from the coffee card image.
+        # Sweetness is hardcoded to 5: Puerto Blest cards use SCA "Dulzor"
+        # which is a pass/fail metric (almost always 10/10), not an intensity.
+        # Only attempt vision if there are 2+ images (the last one is the card).
         acidity = None
         body = None
-        sweetness = None
+        sweetness = 5
         if len(all_image_urls) >= 2:
             card_url = all_image_urls[-1]
             logger.debug(f"[puerto-blest] Sending coffee card to vision: {card_url}")
             intensities = await extract_intensities_from_image(card_url)
             acidity = intensities["acidity"]
             body = intensities["body"]
-            sweetness = intensities["sweetness"]
-            logger.info(f"[puerto-blest] Vision: acidity={acidity}, body={body}, sweetness={sweetness}")
+            logger.info(f"[puerto-blest] Vision: acidity={acidity}, body={body}, sweetness={sweetness} (hardcoded)")
 
         logger.debug(f"[puerto-blest] Scraped: {name} | {price_cents} ARS-cents | {origin_country}")
 

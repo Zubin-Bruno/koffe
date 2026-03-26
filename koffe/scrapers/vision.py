@@ -1,15 +1,15 @@
 """
 Vision helper — extracts intensity values from coffee-card images using Pixtral via OpenRouter.
 
-Puerto Blest (and potentially other roasters) embed acidity / body / sweetness
-data in product images rather than in HTML.  This module sends those images to
+Puerto Blest (and potentially other roasters) embed acidity / body data in
+product images rather than in HTML.  This module sends those images to
 OpenRouter's Pixtral Vision API and parses the response into numeric values.
 
 Usage:
     from koffe.scrapers.vision import extract_intensities_from_image
 
     result = await extract_intensities_from_image("https://example.com/card.jpg")
-    # result = {"acidity": 3.875, "body": 3.875, "sweetness": 5.0}
+    # result = {"acidity": 3.875, "body": 3.875}
 """
 
 from __future__ import annotations
@@ -57,17 +57,16 @@ def _scale_10_to_5(value) -> float | None:
 
 _VISION_PROMPT = """\
 This image is a coffee tasting card with bar charts showing intensity values.
-Read the bar chart values for the following three attributes:
+Read the bar chart values for the following two attributes:
 
 - Acidez (Acidity)
 - Cuerpo (Body)
-- Dulzor (Sweetness)
 
 Each bar is on a scale from 1 to 10.  Estimate the value as precisely as you
 can (e.g. 7.75 if the bar is between 7 and 8, closer to 8).
 
 Return ONLY a JSON object with exactly these keys:
-{"acidez": <number>, "cuerpo": <number>, "dulzor": <number>}
+{"acidez": <number>, "cuerpo": <number>}
 
 No explanation, no markdown — just the JSON object.
 """
@@ -84,10 +83,10 @@ async def extract_intensities_from_image(
     Download *image_url*, send it to Claude Vision, and return parsed
     intensity values scaled to 1–5.
 
-    Returns ``{"acidity": ..., "body": ..., "sweetness": ...}`` where each
-    value is a float or None.  On ANY failure the dict values are all None.
+    Returns ``{"acidity": ..., "body": ...}`` where each value is a float
+    or None.  On ANY failure the dict values are all None.
     """
-    empty: dict[str, float | None] = {"acidity": None, "body": None, "sweetness": None}
+    empty: dict[str, float | None] = {"acidity": None, "body": None}
 
     # --- 1. Check for API key early ---
     if not os.getenv("OPENROUTER_API_KEY"):
@@ -172,7 +171,6 @@ async def extract_intensities_from_image(
     result = {
         "acidity": _scale_10_to_5(data.get("acidez")),
         "body": _scale_10_to_5(data.get("cuerpo")),
-        "sweetness": _scale_10_to_5(data.get("dulzor")),
     }
 
     logger.info(f"[vision] Extracted intensities: {result}")
