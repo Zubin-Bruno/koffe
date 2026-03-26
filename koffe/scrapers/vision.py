@@ -61,13 +61,13 @@ Read the bar chart values for the following three attributes:
 
 - Acidez (Acidity)
 - Cuerpo (Body)
-- Dulzura (Sweetness)
+- Dulzor (Sweetness)
 
 Each bar is on a scale from 1 to 10.  Estimate the value as precisely as you
 can (e.g. 7.75 if the bar is between 7 and 8, closer to 8).
 
 Return ONLY a JSON object with exactly these keys:
-{"acidez": <number>, "cuerpo": <number>, "dulzura": <number>}
+{"acidez": <number>, "cuerpo": <number>, "dulzor": <number>}
 
 No explanation, no markdown — just the JSON object.
 """
@@ -172,7 +172,7 @@ async def extract_intensities_from_image(
     result = {
         "acidity": _scale_10_to_5(data.get("acidez")),
         "body": _scale_10_to_5(data.get("cuerpo")),
-        "sweetness": _scale_10_to_5(data.get("dulzura")),
+        "sweetness": _scale_10_to_5(data.get("dulzor")),
     }
 
     logger.info(f"[vision] Extracted intensities: {result}")
