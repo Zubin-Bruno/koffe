@@ -254,6 +254,15 @@ class PuertoBlestScraper(BaseScraper):
             body = intensities["body"]
             logger.info(f"[puerto-blest] Vision: acidity={acidity}, body={body}, sweetness={sweetness} (hardcoded)")
 
+        # Hardcode overrides for Altura 1 - House Blend (blend with known Peru origin;
+        # vision-extracted intensities are unreliable for this coffee)
+        normalized = normalize_name(name)
+        if normalized and "altura 1" in normalized.lower() and "house blend" in normalized.lower():
+            origin_country = "Peru"
+            acidity = None
+            sweetness = None
+            body = None
+
         logger.debug(f"[puerto-blest] Scraped: {name} | {price_cents} ARS-cents | {origin_country}")
 
         return CoffeeData(

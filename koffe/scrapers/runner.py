@@ -165,12 +165,9 @@ def _upsert_coffees(
             existing.origin_country = data.origin_country
             existing.process = data.process
             existing.roast_level = data.roast_level
-            if data.acidity is not None:
-                existing.acidity = data.acidity
-            if data.sweetness is not None:
-                existing.sweetness = data.sweetness
-            if data.body is not None:
-                existing.body = data.body
+            existing.acidity = data.acidity
+            existing.sweetness = data.sweetness
+            existing.body = data.body
             existing.variety = data.variety
             existing.altitude_masl = data.altitude_masl
             existing.brew_methods = data.brew_methods
