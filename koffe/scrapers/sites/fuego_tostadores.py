@@ -132,14 +132,14 @@ class FuegoTostadoresScraper(BaseScraper):
             )
 
             # Extract all carousel image URLs from the live DOM (before closing).
-            # Tiendanube wraps each image in <a class="js-product-slide-link">.
+            # Fuego's theme stores full-res URLs in data-zoom-url on each slide div.
             all_image_urls = await page.evaluate("""
                 () => {
-                    const links = document.querySelectorAll('.js-product-slide-link');
+                    const slides = document.querySelectorAll('.js-product-slide');
                     const urls = [];
-                    for (const link of links) {
-                        let url = link.href;
-                        if (!url || url.includes('data:image')) continue;
+                    for (const slide of slides) {
+                        let url = slide.getAttribute('data-zoom-url') || '';
+                        if (!url) continue;
                         if (url.startsWith('//')) url = 'https:' + url;
                         urls.push(url);
                     }
