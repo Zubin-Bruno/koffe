@@ -1058,16 +1058,11 @@ body.modal-open { overflow: hidden; }
   object-position: center;
 }
 
-/* Dark gradient so the white text is always legible */
+/* Light overlay — keeps the illustration visible */
 .hero-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to bottom,
-    rgba(0, 0, 0, 0.3) 0%,
-    rgba(0, 0, 0, 0.5) 50%,
-    rgba(0, 0, 0, 0.7) 100%
-  );
+  background: rgba(240, 234, 220, 0.15);
 }
 
 /* Grain texture overlay */
@@ -1100,7 +1095,7 @@ body.modal-open { overflow: hidden; }
   font-size: clamp(3rem, 8vw, 6.5rem);
   font-weight: 800;
   letter-spacing: -0.04em;
-  color: #ffffff;
+  color: #2a1208;
   line-height: 0.95;
   font-optical-sizing: auto;
 }
@@ -1109,7 +1104,7 @@ body.modal-open { overflow: hidden; }
 .hero-tagline {
   font-family: var(--font-body);
   font-size: clamp(0.9rem, 2vw, 1.15rem);
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(42, 18, 8, 0.7);
   line-height: 1.5;
   font-weight: 400;
   letter-spacing: 0.02em;
@@ -1191,7 +1186,7 @@ body.modal-open { overflow: hidden; }
 
 /* GitHub link inside the hero */
 .hero-github {
-  color: rgba(255, 255, 255, 0.75);
+  color: rgba(42, 18, 8, 0.65);
   font-size: 0.85rem;
   font-weight: 600;
   letter-spacing: 0.02em;
@@ -1200,20 +1195,20 @@ body.modal-open { overflow: hidden; }
 }
 
 .hero-github:hover {
-  color: #ffffff;
+  color: #2a1208;
   text-decoration: none;
 }
 
-/* Theme toggle inside the dark hero needs a slight backdrop so both beans are visible */
+/* Theme toggle inside the light hero */
 .hero-actions .theme-toggle {
-  background: rgba(255, 255, 255, 0.15);
+  background: rgba(42, 18, 8, 0.08);
   border-radius: 50%;
   padding: 0.4rem;
   opacity: 1;
 }
 
 .hero-actions .theme-toggle:hover {
-  background: rgba(255, 255, 255, 0.25);
+  background: rgba(42, 18, 8, 0.15);
   opacity: 1;
 }
 
