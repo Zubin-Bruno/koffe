@@ -342,8 +342,8 @@
       var hiddenMax = slider.querySelector('.hidden-max');
 
       function update(changedInput) {
-        var min = parseInt(minInput.value);
-        var max = parseInt(maxInput.value);
+        var min = parseFloat(minInput.value);
+        var max = parseFloat(maxInput.value);
 
         if (min > max) {
           if (changedInput === minInput) {
@@ -361,30 +361,39 @@
         fill.style.left = percentMin + '%';
         fill.style.width = (percentMax - percentMin) + '%';
 
-        if (min === 1 && max === 5) {
+        var dispMin = Math.round(min);
+        var dispMax = Math.round(max);
+
+        if (dispMin === 1 && dispMax === 5) {
           if (minVal) minVal.textContent = 'Todos';
           if (maxVal) maxVal.textContent = '';
           if (sep) sep.style.display = 'none';
           hiddenMin.value = '';
           hiddenMax.value = '';
-        } else if (min === max) {
-          if (minVal) minVal.textContent = min;
+        } else if (dispMin === dispMax) {
+          if (minVal) minVal.textContent = dispMin;
           if (maxVal) maxVal.textContent = '';
           if (sep) sep.style.display = 'none';
-          hiddenMin.value = min;
-          hiddenMax.value = max;
+          hiddenMin.value = dispMin;
+          hiddenMax.value = dispMax;
         } else {
-          if (minVal) minVal.textContent = min;
-          if (maxVal) maxVal.textContent = max;
+          if (minVal) minVal.textContent = dispMin;
+          if (maxVal) maxVal.textContent = dispMax;
           if (sep) sep.style.display = '';
-          hiddenMin.value = min;
-          hiddenMax.value = max;
+          hiddenMin.value = dispMin;
+          hiddenMax.value = dispMax;
         }
+      }
+
+      function snap(input) {
+        input.value = Math.round(parseFloat(input.value));
+        update(input);
       }
 
       [minInput, maxInput].forEach(function(input) {
         input.addEventListener('input', function() { update(input); });
         input.addEventListener('change', function() {
+          snap(input);
           var target = (input === minInput) ? hiddenMin : hiddenMax;
           target.dispatchEvent(new Event('change', { bubbles: true }));
         });
