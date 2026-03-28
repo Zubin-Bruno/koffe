@@ -20,7 +20,15 @@
       hx-push-url="true"
       id="filter-form"
     >
+      <input type="hidden" name="show_all" id="show-all-input" value="{% if show_all %}true{% endif %}" />
       <div class="sidebar-filters">
+        <!-- Mostrar todos -->
+        <div class="sidebar-group">
+          <button type="button" class="btn-show-all {% if show_all %}active{% endif %}" id="btn-show-all" onclick="toggleShowAll()">
+            Mostrar todos
+          </button>
+        </div>
+
         <!-- Búsqueda libre -->
         <div class="sidebar-group">
           <label class="sidebar-label">Buscar</label>
@@ -207,5 +215,40 @@
 
 <script>
   // Range sliders initialization is handled in base.html
+
+  function toggleShowAll() {
+    var input = document.getElementById('show-all-input');
+    var btn = document.getElementById('btn-show-all');
+    var form = document.getElementById('filter-form');
+
+    if (input.value === 'true') {
+      // Deactivate: clear show_all and let the form submit normally
+      input.value = '';
+      btn.classList.remove('active');
+    } else {
+      // Activate: set show_all and reset all other filters
+      form.reset();
+      input.value = 'true';
+      btn.classList.add('active');
+      // Reset range slider hidden inputs
+      form.querySelectorAll('.hidden-min, .hidden-max').forEach(function(el) { el.value = ''; });
+    }
+    // Trigger HTMX to submit the form
+    htmx.trigger(form, 'submit');
+  }
+
+  // When any other filter changes, deactivate "Mostrar todos"
+  document.getElementById('filter-form').addEventListener('change', function(e) {
+    if (e.target.id !== 'show-all-input' && e.target.id !== 'btn-show-all') {
+      document.getElementById('show-all-input').value = '';
+      document.getElementById('btn-show-all').classList.remove('active');
+    }
+  });
+  document.getElementById('filter-form').addEventListener('input', function(e) {
+    if (e.target.type === 'text' || e.target.type === 'number') {
+      document.getElementById('show-all-input').value = '';
+      document.getElementById('btn-show-all').classList.remove('active');
+    }
+  });
 </script>
 {% endblock %}
