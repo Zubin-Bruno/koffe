@@ -175,3 +175,137 @@ async def extract_intensities_from_image(
 
     logger.info(f"[vision] Extracted intensities: {result}")
     return result
+
+
+# ---------------------------------------------------------------------------
+# Fuego Tostadores — 3 bars (CUERPO, ACIDEZ, DULZOR) on a 1–5 scale
+# ---------------------------------------------------------------------------
+
+_FUEGO_VISION_PROMPT = """\
+This image is a coffee tasting card with bar charts showing intensity values.
+Read the bar chart values for the following three attributes:
+
+- Cuerpo (Body)
+- Acidez (Acidity)
+- Dulzor (Sweetness)
+
+Each bar is on a scale from 1 to 5.  Estimate the value as precisely as you
+can (e.g. 3.5 if the bar is halfway between 3 and 4).
+
+Return ONLY a JSON object with exactly these keys:
+{"cuerpo": <number>, "acidez": <number>, "dulzor": <number>}
+
+No explanation, no markdown — just the JSON object.
+"""
+
+
+async def extract_fuego_intensities(
+    image_url: str,
+) -> dict[str, float | None]:
+    """
+    Download *image_url*, send it to Pixtral Vision, and return parsed
+    intensity values for Fuego Tostadores coffee cards.
+
+    Fuego uses a 1–5 scale, so no scale conversion is needed.
+
+    Returns ``{"acidity": ..., "body": ..., "sweetness": ...}`` where each
+    value is a float or None.  On ANY failure the dict values are all None.
+    """
+    empty: dict[str, float | None] = {"acidity": None, "body": None, "sweetness": None}
+
+    # --- 1. Check for API key early ---
+    if not os.getenv("OPENROUTER_API_KEY"):
+        logger.warning("[vision] OPENROUTER_API_KEY not set — skipping Fuego image analysis")
+        return empty
+
+    # --- 2. Download image ---
+    try:
+        async with httpx.AsyncClient(timeout=30) as http:
+            resp = await http.get(image_url)
+            resp.raise_for_status()
+            image_bytes = resp.content
+    except Exception as exc:
+        logger.warning(f"[vision] Failed to download Fuego image {image_url}: {exc}")
+        return empty
+
+    # Determine media type
+    content_type = resp.headers.get("content-type", "")
+    if "png" in content_type:
+        media_type = "image/png"
+    elif "webp" in content_type:
+        media_type = "image/webp"
+    else:
+        media_type = "image/jpeg"
+
+    image_b64 = base64.standard_b64encode(image_bytes).decode("ascii")
+
+    # --- 3. Call OpenRouter Vision API (Pixtral) ---
+    try:
+        api_key = _get_api_key()
+        async with httpx.AsyncClient(timeout=60) as http:
+            response = await http.post(
+                OPENROUTER_API_URL,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                    "HTTP-Referer": "https://github.com/cafecito-project",
+                },
+                json={
+                    "model": OPENROUTER_MODEL,
+                    "messages": [
+                        {
+                            "role": "user",
+                            "content": [
+                                {
+                                    "type": "image_url",
+                                    "image_url": {
+                                        "url": f"data:{media_type};base64,{image_b64}",
+                                    },
+                                },
+                                {
+                                    "type": "text",
+                                    "text": _FUEGO_VISION_PROMPT,
+                                },
+                            ],
+                        }
+                    ],
+                    "max_tokens": 256,
+                },
+            )
+            response.raise_for_status()
+            data = response.json()
+            raw_text = data["choices"][0]["message"]["content"].strip()
+    except Exception as exc:
+        logger.warning(f"[vision] OpenRouter API call failed for Fuego: {exc}")
+        return empty
+
+    # --- 4. Parse JSON response ---
+    try:
+        cleaned = raw_text
+        if cleaned.startswith("```"):
+            cleaned = cleaned.split("\n", 1)[1] if "\n" in cleaned else cleaned[3:]
+        if cleaned.endswith("```"):
+            cleaned = cleaned[: cleaned.rfind("```")]
+        data = json.loads(cleaned.strip())
+    except (json.JSONDecodeError, IndexError) as exc:
+        logger.warning(f"[vision] Could not parse Fuego response as JSON: {raw_text!r} ({exc})")
+        return empty
+
+    # --- 5. Validate and return (already 1–5 scale, no conversion) ---
+    def _clamp_1_5(val) -> float | None:
+        try:
+            v = float(val)
+        except (TypeError, ValueError):
+            return None
+        if v < 1 or v > 5:
+            return None
+        return round(v, 1)
+
+    result = {
+        "acidity": _clamp_1_5(data.get("acidez")),
+        "body": _clamp_1_5(data.get("cuerpo")),
+        "sweetness": _clamp_1_5(data.get("dulzor")),
+    }
+
+    logger.info(f"[vision] Fuego intensities: {result}")
+    return result

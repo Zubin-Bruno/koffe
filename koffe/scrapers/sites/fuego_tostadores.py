@@ -11,13 +11,13 @@ from selectolax.parser import HTMLParser
 from koffe.scrapers.base import BaseScraper, CoffeeData
 from koffe.scrapers.utils import (
     clean_text,
-    normalize_intensity,
     normalize_name,
     normalize_process,
     normalize_roast,
     normalize_tasting_notes,
     parse_price_cents,
 )
+from koffe.scrapers.vision import extract_fuego_intensities
 
 BASE_URL = "https://fuegotostadores.com"
 
@@ -112,11 +112,40 @@ class FuegoTostadoresScraper(BaseScraper):
         try:
             await page.goto(url, wait_until="networkidle", timeout=60000)
 
+            # Scroll to trigger lazy-loading of carousel images
+            await page.evaluate("""
+                async () => {
+                    const delay = ms => new Promise(r => setTimeout(r, ms));
+                    for (let y = 0; y < document.body.scrollHeight; y += 300) {
+                        window.scrollTo(0, y);
+                        await delay(100);
+                    }
+                    window.scrollTo(0, 0);
+                }
+            """)
+            await page.wait_for_timeout(1000)
+
             # Availability: check add-to-cart button (Tiendanube pattern)
             add_btn = page.locator("input.js-addtocart, button.js-addtocart")
             is_available = (
                 await add_btn.count() > 0 and await add_btn.first.is_enabled()
             )
+
+            # Extract all carousel image URLs from the live DOM (before closing).
+            # Tiendanube wraps each image in <a class="js-product-slide-link">.
+            all_image_urls = await page.evaluate("""
+                () => {
+                    const links = document.querySelectorAll('.js-product-slide-link');
+                    const urls = [];
+                    for (const link of links) {
+                        let url = link.href;
+                        if (!url || url.includes('data:image')) continue;
+                        if (url.startsWith('//')) url = 'https:' + url;
+                        urls.push(url);
+                    }
+                    return urls;
+                }
+            """)
 
             html = await page.content()
         finally:
@@ -138,17 +167,18 @@ class FuegoTostadoresScraper(BaseScraper):
             price_node = tree.css_first("#price_display")
             price_cents = parse_price_cents(price_node.text() if price_node else None)
 
-        # Image
-        image_node = tree.css_first(".js-product-slide-img, .product-image img")
-        image_url = None
-        if image_node:
-            image_url = (
-                image_node.attributes.get("src")
-                or image_node.attributes.get("data-src")
-                or image_node.attributes.get("data-lazy")
-            )
-            if image_url and image_url.startswith("//"):
-                image_url = "https:" + image_url
+        # Image — prefer the first carousel URL (reliable, already resolved)
+        image_url = all_image_urls[0] if all_image_urls else None
+        if not image_url:
+            image_node = tree.css_first(".js-product-slide-img, .product-image img")
+            if image_node:
+                image_url = (
+                    image_node.attributes.get("src")
+                    or image_node.attributes.get("data-src")
+                    or image_node.attributes.get("data-lazy")
+                )
+                if image_url and image_url.startswith("//"):
+                    image_url = "https:" + image_url
 
         # Description
         desc_node = tree.css_first(".product-description, .js-product-description")
@@ -180,16 +210,25 @@ class FuegoTostadoresScraper(BaseScraper):
         raw_roast = self._extract_field(page_text, ["tueste", "tostado", "roast"])
         roast_level = normalize_roast(raw_roast)
 
-        # Intensity fields (1–5)
-        acidity = normalize_intensity(
-            self._extract_field(page_text, ["acidez", "acidity"])
-        )
-        sweetness = normalize_intensity(
-            self._extract_field(page_text, ["dulzura", "dulzor", "sweetness"])
-        )
-        body = normalize_intensity(
-            self._extract_field(page_text, ["cuerpo", "body"])
-        )
+        # Intensity fields (1–5) via vision — the 3rd image (index 2) is the bar chart
+        acidity = None
+        sweetness = None
+        body = None
+        if len(all_image_urls) >= 3:
+            chart_url = all_image_urls[2]
+            logger.debug(f"[fuego-tostadores] Sending bar chart to vision: {chart_url}")
+            intensities = await extract_fuego_intensities(chart_url)
+            acidity = intensities["acidity"]
+            sweetness = intensities["sweetness"]
+            body = intensities["body"]
+            logger.info(
+                f"[fuego-tostadores] Vision: acidity={acidity}, sweetness={sweetness}, body={body}"
+            )
+        else:
+            logger.warning(
+                f"[fuego-tostadores] Only {len(all_image_urls)} images found for {slug}, "
+                "expected ≥3 — skipping vision extraction"
+            )
 
         # Tasting notes
         tasting_notes = normalize_tasting_notes(self._extract_tasting_notes(page_text))
