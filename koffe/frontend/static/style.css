@@ -1442,6 +1442,13 @@ body.card-expanded-open { overflow: hidden; }
 .exp-section--brew .exp-brew-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 .exp-section--notes .exp-notes-tags { display: flex; flex-wrap: wrap; gap: 0.35rem; }
 
+.exp-no-data {
+  font-style: italic;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  padding: 0.25rem 0;
+}
+
 .exp-footer {
   border-top: 1px solid var(--border);
   padding-top: 1rem; margin-top: auto;
