@@ -42,7 +42,7 @@
     </div>
 
     {# Tasting notes #}
-    {% set tasting_notes = coffee.attributes.get('tasting_notes', []) %}
+    {% set tasting_notes = coffee.tasting_notes if coffee.tasting_notes else coffee.attributes.get('tasting_notes', []) %}
     {% if tasting_notes %}
     <div class="exp-section exp-section--notes">
       <p class="exp-section-label">Notas de Cata</p>

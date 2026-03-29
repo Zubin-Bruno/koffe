@@ -89,6 +89,7 @@ class Coffee(Base):
     altitude_masl: Mapped[int | None] = mapped_column(Integer)
     attributes: Mapped[dict[str, Any] | None] = mapped_column(UnicodeJSON)
     brew_methods: Mapped[list[str] | None] = mapped_column(UnicodeJSON)
+    tasting_notes: Mapped[list[str] | None] = mapped_column(UnicodeJSON)  # manually-set, never overwritten by scraper
     first_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_seen_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
