@@ -195,10 +195,13 @@ The scale runs from 1 (bottom) to 5 (top), marked by dots on the right side
 with horizontal gridlines at each whole number.
 
 Read the height of each bar by checking which gridline its top edge aligns with.
-Values should be whole numbers (1, 2, 3, 4, or 5).
+Valid values are: 1, 1.5, 2, 2.5, 3, 3.5, 4, 4.5, or 5.
+If a bar's top edge is halfway between two gridlines, use the .5 value (e.g. 3.5).
+Pay close attention when bars have similar heights — compare each bar individually
+against the gridlines, not against each other.
 
 Return ONLY a JSON object:
-{"cuerpo": <integer>, "acidez": <integer>, "dulzor": <integer>}
+{"cuerpo": <number>, "acidez": <number>, "dulzor": <number>}
 
 No explanation, no markdown — just the JSON object.
 """
@@ -308,7 +311,7 @@ async def extract_fuego_intensities(
             return None
         if v < 1 or v > 5:
             return None
-        return round(v)
+        return round(v * 2) / 2
 
     result = {
         "acidity": _clamp_1_5(data.get("acidez")),
