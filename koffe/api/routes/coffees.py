@@ -63,6 +63,7 @@ def _coffee_to_dict(c: Coffee) -> dict:
         "variety": c.variety,
         "altitude_masl": c.altitude_masl,
         "brew_methods": c.brew_methods or [],
+        "tasting_notes": c.tasting_notes,
         "attributes": c.attributes or {},
         "first_seen_at": c.first_seen_at.isoformat() if c.first_seen_at else None,
         "last_seen_at": c.last_seen_at.isoformat() if c.last_seen_at else None,
