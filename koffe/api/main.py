@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from loguru import logger
 
-from koffe.api.routes import coffees, roasters
+from koffe.api.routes import chat, coffees, roasters
 from koffe.db.database import create_tables
 
 SCHEDULE_HOUR = int(os.getenv("SCRAPE_SCHEDULE_HOUR", "3"))
@@ -63,3 +63,4 @@ app.state.templates = templates
 # Routers
 app.include_router(coffees.router)
 app.include_router(roasters.router)
+app.include_router(chat.router)

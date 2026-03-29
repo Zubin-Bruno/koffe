@@ -51,19 +51,192 @@
 </div>
 
 <script>
-  // Auto-expand textarea
-  const chatInput = document.getElementById('ia-chat-input');
-  if (chatInput) {
-    chatInput.addEventListener('input', function() {
-      this.style.height = 'auto';
-      this.style.height = (this.scrollHeight) + 'px';
-      if (this.scrollHeight > 150) {
-        this.style.overflowY = 'auto';
-        this.style.height = '150px';
-      } else {
-        this.style.overflowY = 'hidden';
-      }
-    });
+(function () {
+  'use strict';
+
+  // ── State ───────────────────────────────────────────────────────
+  // chatHistory stores every message as {role, content}.
+  // We send the FULL history with each request so the LLM has context.
+  var chatHistory = [];
+  var isStreaming = false;
+
+  // ── DOM refs ────────────────────────────────────────────────────
+  var chatMessages = document.getElementById('chat-messages');
+  var chatInput    = document.getElementById('ia-chat-input');
+  var sendBtn      = document.querySelector('.chat-send-btn');
+  var resultsGrid  = document.getElementById('results');
+  var chipsBox     = document.getElementById('ia-chips');
+
+  // ── Auto-expand textarea as user types ─────────────────────────
+  chatInput.addEventListener('input', function () {
+    this.style.height = 'auto';
+    this.style.height = this.scrollHeight + 'px';
+    if (this.scrollHeight > 150) {
+      this.style.overflowY = 'auto';
+      this.style.height = '150px';
+    } else {
+      this.style.overflowY = 'hidden';
+    }
+  });
+
+  // ── Enter sends, Shift+Enter adds a new line ──────────────────
+  chatInput.addEventListener('keydown', function (e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  // ── Send button click ─────────────────────────────────────────
+  sendBtn.addEventListener('click', function () { sendMessage(); });
+
+  // ── Create a chat bubble in the sidebar ───────────────────────
+  function appendBubble(role, text) {
+    var div = document.createElement('div');
+    div.className = 'chat-msg ' + (role === 'user' ? 'chat-msg-user' : 'chat-msg-ai');
+    div.textContent = text || '';
+    chatMessages.appendChild(div);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
+    return div;
   }
+
+  // ── Render filter chips from the search args ──────────────────
+  function renderChips(args) {
+    chipsBox.innerHTML = '';
+    var labels = {
+      origin: 'Origen', process: 'Proceso', variety: 'Variedad',
+      brew_method: 'Preparación', tasting_note: 'Nota', search: 'Búsqueda',
+      acidity_min: 'Acidez ≥', acidity_max: 'Acidez ≤',
+      sweetness_min: 'Dulzura ≥', sweetness_max: 'Dulzura ≤',
+      body_min: 'Cuerpo ≥', body_max: 'Cuerpo ≤',
+      min_price: 'Precio ≥', max_price: 'Precio ≤'
+    };
+    var hasChip = false;
+    for (var key in labels) {
+      var val = args[key];
+      if (val == null) continue;
+      var items = Array.isArray(val) ? val : [val];
+      if (items.length === 0) continue;
+      for (var i = 0; i < items.length; i++) {
+        var chip = document.createElement('span');
+        chip.className = 'ia-chip';
+        chip.textContent = labels[key] + ': ' + items[i];
+        chipsBox.appendChild(chip);
+        hasChip = true;
+      }
+    }
+    if (!hasChip) {
+      chipsBox.innerHTML = '<span class="ia-chip ia-chip-empty">Sin filtros activos</span>';
+    }
+  }
+
+  // ── Main send function ────────────────────────────────────────
+  function sendMessage() {
+    var text = chatInput.value.trim();
+    if (!text || isStreaming) return;
+
+    // 1. Add user message to history and show it
+    chatHistory.push({ role: 'user', content: text });
+    appendBubble('user', text);
+    chatInput.value = '';
+    chatInput.style.height = 'auto';
+
+    // 2. Create an empty AI bubble that we'll fill word-by-word
+    var aiBubble = appendBubble('assistant', '');
+    aiBubble.classList.add('is-streaming');
+    isStreaming = true;
+    sendBtn.disabled = true;
+
+    var fullText = '';
+
+    // 3. POST the full history to /api/chat and read the SSE stream
+    fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages: chatHistory })
+    })
+    .then(function (response) {
+      var reader = response.body.getReader();
+      var decoder = new TextDecoder();
+      var buffer = '';
+
+      function read() {
+        return reader.read().then(function (result) {
+          if (result.done) {
+            finish();
+            return;
+          }
+
+          buffer += decoder.decode(result.value, { stream: true });
+          var lines = buffer.split('\n');
+          buffer = lines.pop();  // keep any incomplete line for next chunk
+
+          for (var i = 0; i < lines.length; i++) {
+            var line = lines[i];
+            if (line.indexOf('data: ') !== 0) continue;
+
+            var data;
+            try { data = JSON.parse(line.slice(6)); }
+            catch (e) { continue; }
+
+            switch (data.type) {
+              case 'text':
+                // Append each word/token as it arrives
+                fullText += data.content;
+                aiBubble.textContent = fullText;
+                chatMessages.scrollTop = chatMessages.scrollHeight;
+                break;
+
+              case 'status':
+                // Show a searching indicator
+                aiBubble.textContent = fullText + ' \uD83D\uDD0D';
+                break;
+
+              case 'cards_html':
+                // Inject server-rendered coffee cards into the right panel
+                resultsGrid.innerHTML = data.html;
+                break;
+
+              case 'filters':
+                // Show filter chips at the top of the results panel
+                renderChips(data.args);
+                break;
+
+              case 'done':
+                // The stream is complete — save final text
+                fullText = data.full_text || fullText;
+                break;
+
+              case 'error':
+                fullText = 'Error: ' + data.content;
+                aiBubble.textContent = fullText;
+                break;
+            }
+          }
+
+          return read();  // keep reading
+        });
+      }
+
+      return read();
+    })
+    .catch(function () {
+      fullText = 'Error de conexión. Intentá de nuevo.';
+      aiBubble.textContent = fullText;
+      finish();
+    });
+
+    function finish() {
+      aiBubble.classList.remove('is-streaming');
+      aiBubble.textContent = fullText || aiBubble.textContent;
+      if (fullText) {
+        chatHistory.push({ role: 'assistant', content: fullText });
+      }
+      isStreaming = false;
+      sendBtn.disabled = false;
+      chatInput.focus();
+    }
+  }
+})();
 </script>
 {% endblock %}
