@@ -365,9 +365,9 @@
         var dispMax = Math.round(max);
 
         if (dispMin === 1 && dispMax === 5) {
-          if (minVal) minVal.textContent = 'Todos';
-          if (maxVal) maxVal.textContent = '';
-          if (sep) sep.style.display = 'none';
+          if (minVal) minVal.textContent = dispMin;
+          if (maxVal) maxVal.textContent = dispMax;
+          if (sep) sep.style.display = '';
           hiddenMin.value = '';
           hiddenMax.value = '';
         } else if (dispMin === dispMax) {
