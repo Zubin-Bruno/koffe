@@ -25,7 +25,7 @@ from loguru import logger
 # OpenRouter API configuration
 # ---------------------------------------------------------------------------
 OPENROUTER_API_URL = "https://openrouter.ai/api/v1/chat/completions"
-OPENROUTER_MODEL = "mistralai/pixtral-large-2411"  # Vision model, great for charts
+OPENROUTER_MODEL = "google/gemini-2.0-flash-001"  # Vision model, accurate for bar charts
 
 
 def _get_api_key():
@@ -275,11 +275,15 @@ async def extract_fuego_intensities(
                         }
                     ],
                     "max_tokens": 256,
+                    "temperature": 0,
                 },
             )
             response.raise_for_status()
             data = response.json()
             raw_text = data["choices"][0]["message"]["content"].strip()
+            # --- Diagnostic: log raw model response for debugging ---
+            img_name = image_url.split("/")[-1][:60]
+            logger.info(f"[vision] Fuego raw response for {img_name}: {raw_text!r}")
     except Exception as exc:
         logger.warning(f"[vision] OpenRouter API call failed for Fuego: {exc}")
         return empty

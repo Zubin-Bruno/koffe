@@ -3,8 +3,10 @@ Scraper for Fuego Tostadores — https://fuegotostadores.com
 Argentine specialty roaster. Tiendanube platform, Playwright + selectolax.
 """
 
+import os
 import re
 
+import httpx
 from loguru import logger
 from selectolax.parser import HTMLParser
 
@@ -214,9 +216,29 @@ class FuegoTostadoresScraper(BaseScraper):
         acidity = None
         sweetness = None
         body = None
+
+        # --- Diagnostic: log all image URLs with their indices ---
+        logger.info(f"[fuego-tostadores] Image URLs for {slug}: {list(enumerate(all_image_urls))}")
+
         if len(all_image_urls) >= 3:
             chart_url = all_image_urls[2]
             logger.debug(f"[fuego-tostadores] Sending bar chart to vision: {chart_url}")
+
+            # --- Diagnostic: save chart image to data/debug/ for visual inspection ---
+            try:
+                debug_dir = os.path.join("data", "debug")
+                os.makedirs(debug_dir, exist_ok=True)
+                async with httpx.AsyncClient(timeout=15) as http:
+                    img_resp = await http.get(chart_url)
+                    img_resp.raise_for_status()
+                    ext = "webp" if "webp" in img_resp.headers.get("content-type", "") else "jpg"
+                    debug_path = os.path.join(debug_dir, f"fuego_{slug}_chart.{ext}")
+                    with open(debug_path, "wb") as f:
+                        f.write(img_resp.content)
+                    logger.info(f"[fuego-tostadores] Saved debug chart image: {debug_path}")
+            except Exception as e:
+                logger.warning(f"[fuego-tostadores] Failed to save debug image for {slug}: {e}")
+
             intensities = await extract_fuego_intensities(chart_url)
             acidity = intensities["acidity"]
             sweetness = intensities["sweetness"]
