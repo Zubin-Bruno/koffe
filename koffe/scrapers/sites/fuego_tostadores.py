@@ -3,10 +3,8 @@ Scraper for Fuego Tostadores — https://fuegotostadores.com
 Argentine specialty roaster. Tiendanube platform, Playwright + selectolax.
 """
 
-import os
 import re
 
-import httpx
 from loguru import logger
 from selectolax.parser import HTMLParser
 
@@ -19,7 +17,6 @@ from koffe.scrapers.utils import (
     normalize_tasting_notes,
     parse_price_cents,
 )
-from koffe.scrapers.vision import extract_fuego_intensities
 
 BASE_URL = "https://fuegotostadores.com"
 
@@ -114,27 +111,13 @@ class FuegoTostadoresScraper(BaseScraper):
         try:
             await page.goto(url, wait_until="networkidle", timeout=60000)
 
-            # Scroll to trigger lazy-loading of carousel images
-            await page.evaluate("""
-                async () => {
-                    const delay = ms => new Promise(r => setTimeout(r, ms));
-                    for (let y = 0; y < document.body.scrollHeight; y += 300) {
-                        window.scrollTo(0, y);
-                        await delay(100);
-                    }
-                    window.scrollTo(0, 0);
-                }
-            """)
-            await page.wait_for_timeout(1000)
-
             # Availability: check add-to-cart button (Tiendanube pattern)
             add_btn = page.locator("input.js-addtocart, button.js-addtocart")
             is_available = (
                 await add_btn.count() > 0 and await add_btn.first.is_enabled()
             )
 
-            # Extract all carousel image URLs from the live DOM (before closing).
-            # Fuego's theme stores full-res URLs in data-zoom-url on each slide div.
+            # Extract first carousel image URL for the product thumbnail
             all_image_urls = await page.evaluate("""
                 () => {
                     const slides = document.querySelectorAll('.js-product-slide');
@@ -212,45 +195,10 @@ class FuegoTostadoresScraper(BaseScraper):
         raw_roast = self._extract_field(page_text, ["tueste", "tostado", "roast"])
         roast_level = normalize_roast(raw_roast)
 
-        # Intensity fields (1–5) via vision — the 3rd image (index 2) is the bar chart
+        # Intensity fields are set manually in the DB; scraper does not overwrite them
         acidity = None
         sweetness = None
         body = None
-
-        # --- Diagnostic: log all image URLs with their indices ---
-        logger.info(f"[fuego-tostadores] Image URLs for {slug}: {list(enumerate(all_image_urls))}")
-
-        if len(all_image_urls) >= 3:
-            chart_url = all_image_urls[2]
-            logger.debug(f"[fuego-tostadores] Sending bar chart to vision: {chart_url}")
-
-            # --- Diagnostic: save chart image to data/debug/ for visual inspection ---
-            try:
-                debug_dir = os.path.join("data", "debug")
-                os.makedirs(debug_dir, exist_ok=True)
-                async with httpx.AsyncClient(timeout=15) as http:
-                    img_resp = await http.get(chart_url)
-                    img_resp.raise_for_status()
-                    ext = "webp" if "webp" in img_resp.headers.get("content-type", "") else "jpg"
-                    debug_path = os.path.join(debug_dir, f"fuego_{slug}_chart.{ext}")
-                    with open(debug_path, "wb") as f:
-                        f.write(img_resp.content)
-                    logger.info(f"[fuego-tostadores] Saved debug chart image: {debug_path}")
-            except Exception as e:
-                logger.warning(f"[fuego-tostadores] Failed to save debug image for {slug}: {e}")
-
-            intensities = await extract_fuego_intensities(chart_url)
-            acidity = intensities["acidity"]
-            sweetness = intensities["sweetness"]
-            body = intensities["body"]
-            logger.info(
-                f"[fuego-tostadores] Vision: body={body}, acidity={acidity}, sweetness={sweetness}"
-            )
-        else:
-            logger.warning(
-                f"[fuego-tostadores] Only {len(all_image_urls)} images found for {slug}, "
-                "expected ≥3 — skipping vision extraction"
-            )
 
         # Tasting notes
         tasting_notes = normalize_tasting_notes(self._extract_tasting_notes(page_text))
