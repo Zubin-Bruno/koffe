@@ -669,7 +669,8 @@ main:has(.ia-layout) {
 .detail-tags .tag:not(.tag--sold-out) + .tag:not(.tag--sold-out)::before,
 .exp-notes-tags .tag + .tag::before,
 .exp-brew-tags .tag + .tag::before,
-.compare-card-tags .tag:not(.tag--sold-out) + .tag:not(.tag--sold-out)::before {
+.compare-card-tags .tag:not(.tag--sold-out) + .tag:not(.tag--sold-out)::before,
+.compare-card-notes .tag + .tag::before {
   content: "·";
   margin-right: 0.35rem;
   color: var(--text-muted);
@@ -1820,6 +1821,15 @@ body.card-expanded-open { overflow: hidden; }
   gap: 0.25rem;
 }
 .compare-card-tags .tag {
+  font-size: 0.82rem;
+}
+.compare-card-notes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  width: 100%;
+}
+.compare-card-notes .tag {
   font-size: 0.82rem;
 }
 .compare-card-footer {

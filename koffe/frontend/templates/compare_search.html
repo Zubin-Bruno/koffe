@@ -198,6 +198,14 @@
             <span class="tag tag--process">{{ coffee.process }}</span>
             {% endif %}
           </div>
+          {% set tasting_notes = coffee.tasting_notes if coffee.tasting_notes else coffee.attributes.get('tasting_notes', []) %}
+          {% if tasting_notes %}
+          <div class="compare-card-notes">
+            {% for note in tasting_notes %}
+            <span class="tag tag--notes">{{ note }}</span>
+            {% endfor %}
+          </div>
+          {% endif %}
           <div class="compare-card-footer">
             <span class="compare-card-price">
               {% if coffee.price_display %}{{ coffee.price_display }}{% else %}—{% endif %}
