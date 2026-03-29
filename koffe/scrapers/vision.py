@@ -182,18 +182,23 @@ async def extract_intensities_from_image(
 # ---------------------------------------------------------------------------
 
 _FUEGO_VISION_PROMPT = """\
-This image is a coffee tasting card with bar charts showing intensity values.
-Read the bar chart values for the following three attributes:
+This image is a coffee information card ("ficha técnica"). It contains text data
+at the top (origin, variety, process, altitude, etc.) — IGNORE all of that.
 
-- Cuerpo (Body)
-- Acidez (Acidity)
-- Dulzor (Sweetness)
+Focus ONLY on the section at the BOTTOM of the card, labeled "BALANCE:".
+It contains three VERTICAL column bars, labeled from left to right:
+  - CUERPO (Body)
+  - ACIDEZ (Acidity)
+  - DULZOR (Sweetness)
 
-Each bar is on a scale from 1 to 5.  Estimate the value as precisely as you
-can (e.g. 3.5 if the bar is halfway between 3 and 4).
+The scale runs from 1 (bottom) to 5 (top), marked by dots on the right side
+with horizontal gridlines at each whole number.
 
-Return ONLY a JSON object with exactly these keys:
-{"cuerpo": <number>, "acidez": <number>, "dulzor": <number>}
+Read the height of each bar by checking which gridline its top edge aligns with.
+Values should be whole numbers (1, 2, 3, 4, or 5).
+
+Return ONLY a JSON object:
+{"cuerpo": <integer>, "acidez": <integer>, "dulzor": <integer>}
 
 No explanation, no markdown — just the JSON object.
 """
@@ -299,7 +304,7 @@ async def extract_fuego_intensities(
             return None
         if v < 1 or v > 5:
             return None
-        return round(v, 1)
+        return round(v)
 
     result = {
         "acidity": _clamp_1_5(data.get("acidez")),
