@@ -2275,7 +2275,7 @@ body.card-expanded-open { overflow: hidden; }
   box-shadow: inset 0 0 0 2px var(--accent), 0 1px 4px rgba(86, 53, 31, 0.1);
 }
 .btn-show-all.active .btn-icon {
-  transform: rotate(45deg);
+  transform: none;
 }
 .btn-show-all.active:hover {
   background: var(--tag-bg);
