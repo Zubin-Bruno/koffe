@@ -317,8 +317,8 @@ async def extract_fuego_intensities(
         return round(v * 2) / 2
 
     result = {
-        "acidity": _clamp_1_5(data.get("acidez")),
         "body": _clamp_1_5(data.get("cuerpo")),
+        "acidity": _clamp_1_5(data.get("acidez")),
         "sweetness": _clamp_1_5(data.get("dulzor")),
     }
 

@@ -244,7 +244,7 @@ class FuegoTostadoresScraper(BaseScraper):
             sweetness = intensities["sweetness"]
             body = intensities["body"]
             logger.info(
-                f"[fuego-tostadores] Vision: acidity={acidity}, sweetness={sweetness}, body={body}"
+                f"[fuego-tostadores] Vision: body={body}, acidity={acidity}, sweetness={sweetness}"
             )
         else:
             logger.warning(
