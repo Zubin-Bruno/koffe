@@ -1579,6 +1579,7 @@ body.card-expanded-open { overflow: hidden; }
 .compare-slot {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding: 1.25rem;
 }
 .compare-slot + .compare-slot {
@@ -1723,7 +1724,7 @@ body.card-expanded-open { overflow: hidden; }
   transition: max-height 0.3s ease, padding 0.3s ease;
 }
 .compare-filter-advanced.is-open {
-  max-height: 500px;
+  max-height: none;
   overflow: visible;
   padding-top: 0.5rem;
 }
@@ -1749,7 +1750,9 @@ body.card-expanded-open { overflow: hidden; }
   display: none;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.2rem 0.5rem;
-  min-width: 420px;
+  position: relative;
+  max-height: 200px;
+  overflow-y: auto;
 }
 .compare-filter-advanced-grid .dropdown-check-menu.is-open {
   display: grid;

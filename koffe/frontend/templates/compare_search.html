@@ -117,24 +117,6 @@
           </div>
         </div>
 
-        <div class="filter-group">
-          <div class="dropdown-check">
-            <button type="button" class="dropdown-check-toggle" onclick="toggleDropdown(this)">
-              <span>Notas de cata</span>
-              <span class="dropdown-count" style="display:none"></span>
-            </button>
-            <div class="dropdown-check-menu">
-              {% for n in tasting_notes_options %}
-              <label class="note-checkbox">
-                <span>{{ n }}</span>
-              <input type="checkbox" name="tasting_note" value="{{ n }}"
-                  {% if n in filters.tasting_notes %}checked{% endif %} />
-                </label>
-              {% endfor %}
-            </div>
-          </div>
-        </div>
-
         <div class="filter-group filter-group--full-width">
           <div class="filter-intensity-grid">
             <div class="filter-group">
@@ -180,6 +162,24 @@
                 <input type="hidden" name="body_min" class="hidden-min" value="{{ filters.body_min or '' }}">
                 <input type="hidden" name="body_max" class="hidden-max" value="{{ filters.body_max or '' }}">
               </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <div class="dropdown-check">
+            <button type="button" class="dropdown-check-toggle" onclick="toggleDropdown(this)">
+              <span>Notas de cata</span>
+              <span class="dropdown-count" style="display:none"></span>
+            </button>
+            <div class="dropdown-check-menu">
+              {% for n in tasting_notes_options %}
+              <label class="note-checkbox">
+                <span>{{ n }}</span>
+              <input type="checkbox" name="tasting_note" value="{{ n }}"
+                  {% if n in filters.tasting_notes %}checked{% endif %} />
+                </label>
+              {% endfor %}
             </div>
           </div>
         </div>
