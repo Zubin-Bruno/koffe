@@ -1723,7 +1723,7 @@ body.card-expanded-open { overflow: hidden; }
   transition: max-height 0.3s ease, padding 0.3s ease;
 }
 .compare-filter-advanced.is-open {
-  max-height: 250px;
+  max-height: 500px;
   overflow: visible;
   padding-top: 0.5rem;
 }
@@ -1742,6 +1742,17 @@ body.card-expanded-open { overflow: hidden; }
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-muted);
+}
+
+/* ── Tasting notes dropdown: 3-column grid in compare panel ── */
+.compare-filter-advanced-grid .dropdown-check-menu {
+  display: none;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.2rem 0.5rem;
+  min-width: 420px;
+}
+.compare-filter-advanced-grid .dropdown-check-menu.is-open {
+  display: grid;
 }
 
 /* ── Results inside a slot ──────────────────────────────────── */
