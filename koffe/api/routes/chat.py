@@ -33,14 +33,37 @@ SYSTEM_PROMPT = """\
 You are a friendly barista assistant for Koffe, an Argentine specialty coffee catalog.
 Your job is to help users discover coffees by understanding their preferences.
 
-Rules:
-- Match the user's language (Spanish → Spanish, English → English)
-- Use the search_coffees tool when the user describes preferences or asks for recommendations
-- After searching, summarize results conversationally — mention coffee names, roasters, and key attributes
-- If no matches, suggest relaxing filters
-- Keep responses concise (2-4 sentences)
-- Intensity scales (acidity, sweetness, body) go from 1 to 5
-- Be warm and enthusiastic about coffee
+== TOOL USAGE (critical) ==
+- ALWAYS call search_coffees when the user asks for recommendations or describes \
+preferences. Do NOT ask for permission or clarification first — just search.
+- NEVER write code, function calls, or print() statements as text. Use the tool.
+- NEVER invent coffee names or attributes. Only mention coffees returned by the tool.
+- If the search returns zero results, automatically retry with broader filters \
+(remove the most restrictive filter). Do NOT ask the user to relax filters — just do it.
+
+== ACCURACY (critical) ==
+- Only describe attributes (acidity, sweetness, body, tasting notes, etc.) that \
+actually appear in the search results.
+- If a field says "no data", tell the user that information is not available for \
+that coffee. NEVER invent or guess values.
+
+== TRANSLATING CASUAL SPANISH ==
+When the user uses informal Argentine coffee terms, translate them into filters:
+- "mucha crema", "intenso", "fuerte", "con cuerpo" → body_min=4
+- "suave", "liviano", "delicado" → body_max=2
+- "estilo italiano" → brew_method=["Espresso"], body_min=4
+- "ácido", "frutal", "cítrico", "afrutado" → acidity_min=4
+- "nada ácido", "sin acidez" → acidity_max=2
+- "dulce", "dulzón" → sweetness_min=4
+- "chocolate", "caramelo", "nuez" → use as tasting_note filter
+- "para filtro", "para V60", "pour over" → brew_method=["Filtro"]
+- "tostado oscuro", "bien tostado" → search="dark" or "oscuro"
+- "tostado claro", "rubio" → search="light" or "claro"
+
+== RESPONSE STYLE ==
+- Match the user's language (Spanish → Spanish, English → English).
+- Keep responses concise: 2-4 sentences.
+- Be warm and enthusiastic about coffee.
 - Do NOT use markdown formatting — no asterisks, headers, or bold. Plain text only.
 """
 
@@ -158,21 +181,36 @@ def _execute_search(args: dict, db) -> list[dict]:
 
 
 def _summarise_for_llm(results: list[dict]) -> str:
-    """Build a concise text summary of search results for the second LLM call."""
+    """Build a concise text summary of search results for the second LLM call.
+
+    Every attribute is included explicitly — NULL values become "no data" so the
+    LLM knows not to invent them.  Pipe-delimited to avoid ambiguity.
+    """
     if not results:
         return "No coffees found matching those filters."
     lines = []
     for c in results:
-        parts = [c["name"]]
-        if c.get("roaster_name"):
-            parts.append(f"by {c['roaster_name']}")
-        if c.get("origin_country"):
-            parts.append(f"from {c['origin_country']}")
-        if c.get("process"):
-            parts.append(f"({c['process']})")
-        if c.get("price_display"):
-            parts.append(f"- {c['price_display']}")
-        lines.append(", ".join(parts))
+        name = c.get("name", "Unknown")
+        roaster = c.get("roaster_name") or "no data"
+        origin = c.get("origin_country") or "no data"
+        process = c.get("process") or "no data"
+        roast = c.get("roast_level") or "no data"
+        variety = c.get("variety") or "no data"
+        price = c.get("price_display") or "no data"
+
+        acidity = f"{int(c['acidity'])}/5" if c.get("acidity") else "no data"
+        sweetness = f"{int(c['sweetness'])}/5" if c.get("sweetness") else "no data"
+        body = f"{int(c['body'])}/5" if c.get("body") else "no data"
+
+        notes = ", ".join(c["tasting_notes"]) if c.get("tasting_notes") else "no data"
+        brews = ", ".join(c["brew_methods"]) if c.get("brew_methods") else "no data"
+
+        lines.append(
+            f"Name: {name} | Roaster: {roaster} | Origin: {origin} | "
+            f"Process: {process} | Roast: {roast} | Variety: {variety} | "
+            f"Price: {price} | Acidity: {acidity} | Sweetness: {sweetness} | "
+            f"Body: {body} | Tasting notes: {notes} | Brew methods: {brews}"
+        )
     return f"Found {len(results)} coffees:\n" + "\n".join(lines)
 
 
