@@ -1750,7 +1750,7 @@ body.card-expanded-open { overflow: hidden; }
   display: none;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.2rem 0.5rem;
-  position: relative;
+  /* position: absolute is inherited from base .dropdown-check-menu */
   max-height: 200px;
   overflow-y: auto;
 }
