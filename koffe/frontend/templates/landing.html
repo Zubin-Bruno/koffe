@@ -11,16 +11,18 @@
       document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
-  <!-- Google Fonts loaded asynchronously so it never blocks page render -->
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link rel="preload"
-        href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Outfit:wght@300;400;500;600;700&display=swap"
-        as="style"
-        onload="this.onload=null;this.rel='stylesheet'" />
-  <noscript>
-    <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  </noscript>
+  <!-- Google Fonts loaded via JS so they never block page load or keep the spinner going -->
+  <script>
+    (function(){
+      var url = 'https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700;9..144,800&family=Outfit:wght@300;400;500;600;700&display=swap';
+      var link = document.createElement('link');
+      link.rel = 'stylesheet';
+      link.href = url;
+      var timeout = setTimeout(function(){ link.parentNode && link.parentNode.removeChild(link); }, 3000);
+      link.onload = function(){ clearTimeout(timeout); };
+      document.head.appendChild(link);
+    })();
+  </script>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body class="landing-body">
@@ -30,7 +32,7 @@
     <!-- Background photo from Unsplash (overhead coffee cup, warm tones) -->
     <img
       class="hero-bg"
-      src="/static/hero.jpg"
+      src="https://i.pinimg.com/1200x/51/ae/c9/51aec9f4127eb1ebb7db7c08aabce884.jpg"
       alt=""
       aria-hidden="true"
     />
