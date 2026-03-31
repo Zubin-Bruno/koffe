@@ -26,4 +26,4 @@ def submit_feedback(
         db.add(entry)
         db.commit()
 
-    return "<p class='feedback-success'>¡Gracias por tu feedback! 🙌</p>"
+    return "<p class='feedback-success'>¡Gracias por tu feedback!</p>"
