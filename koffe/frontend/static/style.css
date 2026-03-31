@@ -880,6 +880,61 @@ body.modal-open { overflow: hidden; }
   color: var(--text);
 }
 
+/* Feedback modal form */
+.feedback-title {
+  margin: 0 0 1.25rem;
+  font-size: 1.25rem;
+  color: var(--text);
+}
+
+.feedback-label {
+  display: block;
+  margin-bottom: 0.35rem;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+}
+
+.feedback-textarea {
+  width: 100%;
+  padding: 0.6rem 0.75rem;
+  margin-bottom: 1rem;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  resize: vertical;
+  box-sizing: border-box;
+}
+
+.feedback-textarea:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.feedback-submit {
+  display: inline-block;
+  padding: 0.55rem 1.5rem;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.feedback-submit:hover {
+  background: var(--accent-hover);
+}
+
+.feedback-success {
+  text-align: center;
+  font-size: 1.1rem;
+  color: var(--accent);
+  padding: 2rem 0;
+}
+
 /* ── Detail sections ─────────────────────────────────────── */
 .detail-header {
   display: flex;

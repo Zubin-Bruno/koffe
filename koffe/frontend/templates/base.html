@@ -41,6 +41,25 @@
   <footer>
     <p>Koffe — datos actualizados diariamente desde sitios de tostadores</p>
   </footer>
+  <!-- ── Feedback modal ──────────────────────────────────── -->
+  <div class="modal-backdrop" id="feedback-modal" style="display:none;">
+    <div class="modal-content">
+      <button class="modal-close" id="feedback-modal-close" aria-label="Cerrar">&times;</button>
+      <h2 class="feedback-title">Tu feedback</h2>
+      <form hx-post="/feedback" hx-target="#feedback-form-body" hx-swap="innerHTML">
+        <div id="feedback-form-body">
+          <label class="feedback-label" for="roaster_suggestion">¿Qué tostador te gustaría que agreguemos?</label>
+          <textarea class="feedback-textarea" id="roaster_suggestion" name="roaster_suggestion" rows="3" placeholder="Nombre del tostador, ciudad o link a su web..."></textarea>
+
+          <label class="feedback-label" for="general_feedback">¿Cómo podemos mejorar Koffe?</label>
+          <textarea class="feedback-textarea" id="general_feedback" name="general_feedback" rows="3" placeholder="Ideas, bugs, lo que sea..."></textarea>
+
+          <button type="submit" class="feedback-submit">Enviar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
   <script>
     // Theme toggle logic
     (function() {
@@ -64,6 +83,39 @@
         applyTheme(next);
       });
     })();
+  </script>
+  <script>
+  // ── Feedback modal ───────────────────────────────────────
+  (function () {
+    var modal = document.getElementById('feedback-modal');
+    var closeBtn = document.getElementById('feedback-modal-close');
+
+    function openModal() {
+      modal.style.display = 'flex';
+      document.body.classList.add('modal-open');
+    }
+
+    function closeModal() {
+      modal.style.display = 'none';
+      document.body.classList.remove('modal-open');
+    }
+
+    // Open when the header button is clicked
+    document.querySelector('.suggest-roaster-btn').addEventListener('click', openModal);
+
+    // Close on X button
+    closeBtn.addEventListener('click', closeModal);
+
+    // Close on backdrop click (but not when clicking the modal content itself)
+    modal.addEventListener('click', function (e) {
+      if (e.target === modal) closeModal();
+    });
+
+    // Close on Escape key
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && modal.style.display !== 'none') closeModal();
+    });
+  })();
   </script>
   <script>
   // ── Card expand animation ───────────────────────────────────

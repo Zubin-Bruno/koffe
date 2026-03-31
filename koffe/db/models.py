@@ -114,3 +114,15 @@ class ScrapeRun(Base):
 
     def __repr__(self) -> str:
         return f"<ScrapeRun roaster_id={self.roaster_id} status={self.status}>"
+
+
+class Feedback(Base):
+    __tablename__ = "feedback"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    roaster_suggestion: Mapped[str | None] = mapped_column(Text, nullable=True)
+    general_feedback: Mapped[str | None] = mapped_column(Text, nullable=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+    def __repr__(self) -> str:
+        return f"<Feedback id={self.id}>"
