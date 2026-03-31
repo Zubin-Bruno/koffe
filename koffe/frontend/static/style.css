@@ -122,26 +122,11 @@ header {
 .suggest-roaster-btn {
   font-size: 0.85rem;
   font-weight: 500;
-  color: #3a1a08;
-  background: rgba(86, 53, 31, 0.08);
-  padding: 0.4rem 1rem;
-  border-radius: 99px;
+  color: var(--accent);
+  font-family: var(--font-body);
+  background: none;
   border: none;
   cursor: pointer;
-  transition: background 0.15s;
-}
-
-.suggest-roaster-btn:hover {
-  background: rgba(86, 53, 31, 0.15);
-}
-
-[data-theme="dark"] .suggest-roaster-btn {
-  color: #c9a060;
-  background: rgba(154, 95, 55, 0.12);
-}
-
-[data-theme="dark"] .suggest-roaster-btn:hover {
-  background: rgba(154, 95, 55, 0.2);
 }
 
 /* ── Main ─────────────────────────────────────────────────── */
