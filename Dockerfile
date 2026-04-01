@@ -18,7 +18,7 @@ COPY pyproject.toml .
 COPY . .
 
 # Install Python dependencies
-RUN uv pip install --system -e .
+RUN uv pip install --system .
 
 # Install Playwright's Chromium browser
 RUN python -m playwright install chromium
@@ -26,6 +26,4 @@ RUN python -m playwright install chromium
 # Create data directory (Railway Volume will overlay this)
 RUN mkdir -p data/images
 
-EXPOSE 8080
-
-CMD sh -c "echo 'Starting uvicorn on port ${PORT:-8080}' && python -m uvicorn koffe.api.main:app --host 0.0.0.0 --port ${PORT:-8080}"
+CMD ["python", "start.py"]

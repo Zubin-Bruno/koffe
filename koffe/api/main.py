@@ -54,7 +54,10 @@ app.mount(
 
 IMAGES_DIR = pathlib.Path("data/images")
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-app.mount("/images", StaticFiles(directory=str(IMAGES_DIR)), name="images")
+try:
+    app.mount("/images", StaticFiles(directory=str(IMAGES_DIR)), name="images")
+except Exception as e:
+    logger.warning(f"Could not mount /images: {e}")
 templates = Jinja2Templates(directory=str(BASE_DIR / "frontend" / "templates"))
 
 # Make templates available to routes via app.state
