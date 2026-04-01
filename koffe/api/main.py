@@ -46,6 +46,11 @@ app = FastAPI(
 import pathlib
 
 BASE_DIR = pathlib.Path(__file__).parent.parent
+# Non-editable pip install puts __file__ in site-packages where frontend/ doesn't exist.
+# Fall back to /app/koffe (the Docker WORKDIR copy) when that happens.
+if not (BASE_DIR / "frontend").exists():
+    BASE_DIR = pathlib.Path("/app/koffe")
+
 app.mount(
     "/static",
     StaticFiles(directory=str(BASE_DIR / "frontend" / "static")),

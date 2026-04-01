@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y \
 # Install uv (fast Python package manager)
 RUN pip install uv
 
+ENV PYTHONUNBUFFERED=1
+
 WORKDIR /app
 
 # Copy dependency files first (for Docker layer caching)
