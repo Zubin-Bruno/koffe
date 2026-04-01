@@ -60,6 +60,11 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "frontend" / "templates"))
 # Make templates available to routes via app.state
 app.state.templates = templates
 
+# Health check — lightweight endpoint for Railway to verify the app is alive
+@app.get("/health")
+async def health():
+    return {"status": "ok"}
+
 # Routers
 app.include_router(coffees.router)
 app.include_router(roasters.router)
