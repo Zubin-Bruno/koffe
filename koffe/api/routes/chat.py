@@ -21,10 +21,21 @@ router = APIRouter()
 # ── OpenAI client pointed at OpenRouter ──────────────────────────────
 # The openai library is just a convenient HTTP client.  We override
 # base_url so every request goes to OpenRouter, never to OpenAI.
-client = AsyncOpenAI(
-    base_url="https://openrouter.ai/api/v1",
-    api_key=os.getenv("OPENROUTER_API_KEY"),
-)
+# NOTE: We lazy-initialize the client inside a function instead of
+# creating it at module level.  This prevents the app from crashing
+# on startup if the OPENROUTER_API_KEY env var is not yet set (which
+# was causing 502 errors on Railway).
+_client = None
+
+
+def _get_client() -> AsyncOpenAI:
+    global _client
+    if _client is None:
+        _client = AsyncOpenAI(
+            base_url="https://openrouter.ai/api/v1",
+            api_key=os.getenv("OPENROUTER_API_KEY"),
+        )
+    return _client
 
 CHAT_MODEL = os.getenv("CHAT_MODEL", "google/gemini-2.0-flash-001")
 
@@ -239,7 +250,7 @@ async def chat_endpoint(request: Request, chat_req: ChatRequest):
                 messages.append({"role": msg.role, "content": msg.content})
 
             # ── 2. First LLM call (streaming, with tool definition) ──
-            stream = await client.chat.completions.create(
+            stream = await _get_client().chat.completions.create(
                 model=CHAT_MODEL,
                 messages=messages,
                 tools=[SEARCH_TOOL],
@@ -330,7 +341,7 @@ async def chat_endpoint(request: Request, chat_req: ChatRequest):
                         },
                     ]
 
-                    stream2 = await client.chat.completions.create(
+                    stream2 = await _get_client().chat.completions.create(
                         model=CHAT_MODEL,
                         messages=messages_with_tool,
                         stream=True,
