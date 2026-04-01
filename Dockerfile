@@ -28,4 +28,4 @@ RUN mkdir -p data/images
 
 EXPOSE 8080
 
-CMD ["sh", "-c", "python -m uvicorn koffe.api.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+CMD sh -c "echo 'Starting uvicorn on port ${PORT:-8080}' && python -m uvicorn koffe.api.main:app --host 0.0.0.0 --port ${PORT:-8080}"
