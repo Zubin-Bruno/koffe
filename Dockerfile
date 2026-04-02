@@ -26,8 +26,8 @@ RUN pip install --no-cache-dir \
 
 COPY . .
 
-RUN mkdir -p data/images
+RUN mkdir -p data/images && chmod +x start.sh
 
 EXPOSE 10000
 
-CMD uvicorn koffe.api.main:app --host 0.0.0.0 --port ${PORT:-10000}
+CMD ["/bin/sh", "/app/start.sh"]
