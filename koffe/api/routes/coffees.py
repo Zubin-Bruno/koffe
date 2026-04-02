@@ -249,15 +249,15 @@ async def coffee_detail(coffee_id: int, request: Request, db: Session = Depends(
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
-        "coffee_detail.html",
-        {"request": request, "coffee": _coffee_to_dict(coffee)},
+        request, "coffee_detail.html",
+        {"coffee": _coffee_to_dict(coffee)},
     )
 
 
 @router.get("/", response_class=HTMLResponse, include_in_schema=False)
 async def landing(request: Request):
     templates = request.app.state.templates
-    return templates.TemplateResponse("landing.html", {"request": request})
+    return templates.TemplateResponse(request, "landing.html")
 
 
 @router.get("/buscar", response_class=HTMLResponse, include_in_schema=False)
@@ -329,9 +329,8 @@ async def index(
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
-        "index.html",
+        request, "index.html",
         {
-            "request": request,
             "coffees": [_coffee_to_dict(c) for c in coffees],
             **opts,
             "filters": {
@@ -364,7 +363,7 @@ async def explore_ia(request: Request, db: Session = Depends(get_db)):
     # Provide an initial empty result set or some popular ones.
     # For now, we'll just send total count
     total_available = db.query(Coffee).filter(Coffee.is_available == True).count()
-    return templates.TemplateResponse("explore_ia.html", {"request": request, "total_available": total_available})
+    return templates.TemplateResponse(request, "explore_ia.html", {"total_available": total_available})
 
 
 @router.get("/coffees", response_class=HTMLResponse, include_in_schema=False)
@@ -431,9 +430,8 @@ async def coffees_partial(
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
-        "coffee_cards.html",
+        request, "coffee_cards.html",
         {
-            "request": request,
             "coffees": [_coffee_to_dict(c) for c in coffees],
             "total": len(coffees),
             "has_filters": has_filters,
@@ -491,9 +489,8 @@ async def compare_search(
     opts = _get_filter_options(db)
     templates = request.app.state.templates
     return templates.TemplateResponse(
-        "compare_search.html",
+        request, "compare_search.html",
         {
-            "request": request,
             "slot": slot,
             "coffees": [_coffee_to_dict(c) for c in coffees],
             "total": len(coffees),
@@ -534,6 +531,6 @@ async def compare_detail(
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
-        "compare_detail.html",
-        {"request": request, "coffee": _coffee_to_dict(coffee), "slot": slot},
+        request, "compare_detail.html",
+        {"coffee": _coffee_to_dict(coffee), "slot": slot},
     )

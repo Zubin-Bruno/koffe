@@ -40,7 +40,7 @@ app = FastAPI(
     description="Specialty coffee browser — scrapes Argentine roasters and serves a filterable UI",
     version="0.1.0",
     lifespan=lifespan,
-    debug=True,
+    debug=False,
 )
 
 # Static files and templates
