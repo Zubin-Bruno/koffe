@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: koffe
+    runtime: docker
+    repo: https://github.com/Zubin-Bruno/koffe
+    branch: master
+    healthCheckPath: /health
+    disk:
+      name: koffe-data
+      mountPath: /app/data
+      sizeGB: 1
+    envVars:
+      - key: DATABASE_URL
+        value: sqlite:///./data/koffe.db
+      - key: SCRAPE_SCHEDULE_HOUR
+        value: "3"

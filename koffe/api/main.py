@@ -61,6 +61,11 @@ templates = Jinja2Templates(directory=str(BASE_DIR / "frontend" / "templates"))
 # Make templates available to routes via app.state
 app.state.templates = templates
 
+# Health check for Render
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
 # Routers
 app.include_router(coffees.router)
 app.include_router(roasters.router)

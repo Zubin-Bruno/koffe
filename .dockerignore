@@ -1,0 +1,12 @@
+.git
+.env
+.env.*
+.venv
+__pycache__
+*.pyc
+data/
+.claude/
+*.db
+.mypy_cache
+.pytest_cache
+mendels data/
