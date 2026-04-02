@@ -14,16 +14,13 @@ WORKDIR /app
 
 COPY . .
 
-# Install Python deps (non-editable to avoid path bugs)
-RUN pip install --no-cache-dir . && \
+# Install in editable mode so __file__ stays in /app/koffe (frontend/ exists here)
+RUN pip install --no-cache-dir -e . && \
     python -m playwright install chromium
 
-# Ensure data directory exists (will be overridden by persistent disk)
+# Ensure data directory exists (Render disk mount may replace it empty)
 RUN mkdir -p data/images
 
 EXPOSE 10000
 
-COPY start.sh /app/start.sh
-RUN chmod +x /app/start.sh
-
-CMD ["/app/start.sh"]
+CMD uvicorn koffe.api.main:app --host 0.0.0.0 --port ${PORT:-10000}
