@@ -13,44 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from koffe.db.database import SessionLocal, create_tables
 from koffe.db.models import Coffee, Roaster
-
-SAMPLE_ROASTERS = [
-    {
-        "name": "Cuervo Café",
-        "slug": "cuervo-cafe",
-        "website_url": "https://cuervocafe.com",
-        "country": "Argentina",
-        "scraper_module": "koffe.scrapers.sites.cuervo_cafe",
-    },
-    {
-        "name": "Puerto Blest Tostadores",
-        "slug": "puerto-blest",
-        "website_url": "https://www.cafepuertoblest.com",
-        "country": "Argentina",
-        "scraper_module": "koffe.scrapers.sites.puerto_blest",
-    },
-    {
-        "name": "Fuego Tostadores",
-        "slug": "fuego-tostadores",
-        "website_url": "https://fuegotostadores.com",
-        "country": "Argentina",
-        "scraper_module": "koffe.scrapers.sites.fuego_tostadores",
-    },
-    {
-        "name": "Flat N' White",
-        "slug": "flat-n-white",
-        "website_url": "https://flatnwhite.com",
-        "country": "Argentina",
-        "scraper_module": "koffe.scrapers.sites.flat_n_white",
-    },
-    {
-        "name": "Mendel Tostadores",
-        "slug": "mendel-tostadores",
-        "website_url": "https://www.whatsapp.com/catalog/5491137628574/?app_absent=0&utm_source=ig",
-        "country": "Argentina",
-        "scraper_module": "koffe.scrapers.sites.mendel_tostadores",
-    },
-]
+from koffe.db.seed_data import SAMPLE_ROASTERS
 
 MENDEL_CATALOG_URL = "https://www.whatsapp.com/catalog/5491137628574/?app_absent=0&utm_source=ig"
 

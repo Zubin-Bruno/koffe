@@ -9,6 +9,7 @@ from loguru import logger
 
 from koffe.api.routes import chat, coffees, feedback, roasters
 from koffe.db.database import create_tables
+from koffe.db.seed_data import seed_roasters_if_empty
 
 SCHEDULE_HOUR = int(os.getenv("SCRAPE_SCHEDULE_HOUR", "3"))
 
@@ -21,12 +22,21 @@ async def lifespan(app: FastAPI):
     create_tables()
     logger.info("Database tables ready")
 
+    # Auto-seed roasters on first deploy (empty DB)
+    freshly_seeded = seed_roasters_if_empty()
+
     # Schedule daily scrape
     from koffe.scrapers.runner import run_all_scrapers
 
     scheduler.add_job(run_all_scrapers, "cron", hour=SCHEDULE_HOUR, minute=0)
     scheduler.start()
     logger.info(f"Scheduler started — scraping daily at {SCHEDULE_HOUR:02d}:00")
+
+    # If we just seeded a fresh DB, trigger an immediate scrape so coffees
+    # appear within minutes instead of waiting until 3 AM.
+    if freshly_seeded:
+        scheduler.add_job(run_all_scrapers, "date")
+        logger.info("Fresh DB detected — triggered immediate one-shot scrape")
 
     yield
 
