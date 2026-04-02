@@ -46,10 +46,6 @@ app = FastAPI(
 import pathlib
 
 BASE_DIR = pathlib.Path(__file__).parent.parent
-# Non-editable pip install puts __file__ in site-packages where frontend/ doesn't exist.
-# Fall back to /app/koffe (the Docker WORKDIR copy) when that happens.
-if not (BASE_DIR / "frontend").exists():
-    BASE_DIR = pathlib.Path("/app/koffe")
 
 app.mount(
     "/static",
@@ -59,19 +55,11 @@ app.mount(
 
 IMAGES_DIR = pathlib.Path("data/images")
 IMAGES_DIR.mkdir(parents=True, exist_ok=True)
-try:
-    app.mount("/images", StaticFiles(directory=str(IMAGES_DIR)), name="images")
-except Exception as e:
-    logger.warning(f"Could not mount /images: {e}")
+app.mount("/images", StaticFiles(directory=str(IMAGES_DIR)), name="images")
 templates = Jinja2Templates(directory=str(BASE_DIR / "frontend" / "templates"))
 
 # Make templates available to routes via app.state
 app.state.templates = templates
-
-# Health check — lightweight endpoint for Railway to verify the app is alive
-@app.get("/health")
-async def health():
-    return {"status": "ok"}
 
 # Routers
 app.include_router(coffees.router)

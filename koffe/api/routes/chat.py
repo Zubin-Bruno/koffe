@@ -21,10 +21,8 @@ router = APIRouter()
 # ── OpenAI client pointed at OpenRouter ──────────────────────────────
 # The openai library is just a convenient HTTP client.  We override
 # base_url so every request goes to OpenRouter, never to OpenAI.
-# NOTE: We lazy-initialize the client inside a function instead of
-# creating it at module level.  This prevents the app from crashing
-# on startup if the OPENROUTER_API_KEY env var is not yet set (which
-# was causing 502 errors on Railway).
+# NOTE: We lazy-initialize the client so the app doesn't crash on
+# startup if the OPENROUTER_API_KEY env var is not yet set.
 _client = None
 
 
