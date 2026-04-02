@@ -9,7 +9,7 @@ from loguru import logger
 
 from koffe.api.routes import chat, coffees, feedback, roasters
 from koffe.db.database import create_tables
-from koffe.db.seed_data import seed_roasters_if_empty
+from koffe.db.seed_data import copy_bundled_images, seed_roasters_if_empty
 
 SCHEDULE_HOUR = int(os.getenv("SCRAPE_SCHEDULE_HOUR", "3"))
 
@@ -24,6 +24,9 @@ async def lifespan(app: FastAPI):
 
     # Auto-seed roasters on first deploy (empty DB)
     freshly_seeded = seed_roasters_if_empty()
+
+    # Copy bundled images (e.g. Mendel) to data/images/ if missing
+    copy_bundled_images()
 
     # Schedule daily scrape
     from koffe.scrapers.runner import run_all_scrapers
