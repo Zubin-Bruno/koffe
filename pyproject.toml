@@ -19,6 +19,7 @@ dependencies = [
     "loguru>=0.7",
     "anthropic>=0.40",
     "openai>=1.0",
+    "python-multipart>=0.0.6",
 ]
 
 [build-system]
