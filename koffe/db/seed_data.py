@@ -11,7 +11,7 @@ import shutil
 from loguru import logger
 
 from koffe.db.database import SessionLocal
-from koffe.db.models import Roaster
+from koffe.db.models import Coffee, Roaster
 
 IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".png", ".webp"}
 
@@ -112,3 +112,65 @@ def copy_bundled_images() -> int:
     else:
         logger.info("All bundled images already present — nothing to copy")
     return copied
+
+
+def apply_curated_intensity() -> int:
+    """Apply curated intensity values to Fuego coffees that have NULL fields.
+
+    The Fuego website doesn't list acidity/sweetness/body, so the scraper
+    embeds a CURATED_BALANCE dict with hand-picked values. But those values
+    only reach the DB when the scraper runs. This function patches existing
+    rows immediately on app startup so deploys take effect without waiting
+    for the next 3 AM scrape.
+
+    Returns the number of rows updated.
+    """
+    from koffe.scrapers.sites.fuego_tostadores import CURATED_BALANCE
+    from koffe.scrapers.utils import normalize_name
+
+    db = SessionLocal()
+    try:
+        roaster = db.query(Roaster).filter(Roaster.slug == "fuego-tostadores").first()
+        if not roaster:
+            logger.debug("Fuego roaster not in DB yet — skipping curated intensity")
+            return 0
+
+        coffees = db.query(Coffee).filter(Coffee.roaster_id == roaster.id).all()
+        updated = 0
+
+        for coffee in coffees:
+            balance = CURATED_BALANCE.get(normalize_name(coffee.name))
+            if not balance:
+                continue
+
+            # Only fill in fields that are still NULL — never overwrite existing data
+            needs_update = (
+                coffee.acidity is None
+                or coffee.sweetness is None
+                or coffee.body is None
+            )
+            if not needs_update:
+                continue
+
+            if coffee.acidity is None:
+                coffee.acidity = balance[0]
+            if coffee.sweetness is None:
+                coffee.sweetness = balance[1]
+            if coffee.body is None:
+                coffee.body = balance[2]
+
+            updated += 1
+            logger.info(
+                f"Applied curated intensity to '{coffee.name}': "
+                f"A={balance[0]} S={balance[1]} B={balance[2]}"
+            )
+
+        if updated:
+            db.commit()
+            logger.info(f"Applied curated intensity to {updated} Fuego coffee(s)")
+        else:
+            logger.info("All Fuego coffees already have intensity values — nothing to patch")
+
+        return updated
+    finally:
+        db.close()

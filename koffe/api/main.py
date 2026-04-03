@@ -9,7 +9,7 @@ from loguru import logger
 
 from koffe.api.routes import chat, coffees, feedback, roasters
 from koffe.db.database import create_tables
-from koffe.db.seed_data import copy_bundled_images, seed_roasters_if_empty
+from koffe.db.seed_data import apply_curated_intensity, copy_bundled_images, seed_roasters_if_empty
 
 SCHEDULE_HOUR = int(os.getenv("SCRAPE_SCHEDULE_HOUR", "3"))
 
@@ -27,6 +27,10 @@ async def lifespan(app: FastAPI):
 
     # Copy bundled images (e.g. Mendel) to data/images/ if missing
     copy_bundled_images()
+
+    # Patch Fuego coffees with curated intensity values (acidity/sweetness/body)
+    # so deploys take effect immediately without waiting for the 3 AM scrape.
+    apply_curated_intensity()
 
     # Schedule daily scrape
     from koffe.scrapers.runner import run_all_scrapers
