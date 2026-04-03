@@ -97,18 +97,28 @@ class GrainsArScraper(BaseScraper):
                 return tag
         return None
 
+    CANONICAL_COUNTRY = {
+        "ethiopia": "Ethiopia", "etiopía": "Ethiopia", "etiopia": "Ethiopia",
+        "colombia": "Colombia",
+        "brazil": "Brazil", "brasil": "Brazil",
+        "peru": "Perú", "perú": "Perú",
+        "kenya": "Kenya", "kenia": "Kenya",
+        "guatemala": "Guatemala",
+        "rwanda": "Rwanda", "ruanda": "Rwanda",
+        "honduras": "Honduras",
+        "costa rica": "Costa Rica",
+        "panama": "Panamá", "panamá": "Panamá",
+        "el salvador": "El Salvador",
+        "nicaragua": "Nicaragua",
+        "burundi": "Burundi",
+        "indonesia": "Indonesia",
+        "yemen": "Yemen",
+        "bolivia": "Bolivia",
+    }
+
     def _extract_origin(self, tags: list[str], title: str) -> str | None:
-        countries = [
-            "ethiopia", "etiopía", "etiopia",
-            "colombia", "brazil", "brasil",
-            "peru", "perú", "kenya", "kenia",
-            "guatemala", "rwanda", "ruanda",
-            "honduras", "costa rica", "panama", "panamá",
-            "el salvador", "nicaragua", "burundi",
-            "indonesia", "yemen", "bolivia",
-        ]
         text = " ".join(tags) + " " + title.lower()
-        for country in countries:
-            if country in text:
-                return country.title()
+        for keyword, canonical in self.CANONICAL_COUNTRY.items():
+            if keyword in text:
+                return canonical
         return None

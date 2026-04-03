@@ -258,7 +258,7 @@ class PuertoBlestScraper(BaseScraper):
         # vision-extracted intensities are unreliable for this coffee)
         normalized = normalize_name(name)
         if normalized and "altura 1" in normalized.lower() and "house blend" in normalized.lower():
-            origin_country = "Peru"
+            origin_country = "Perú"
             acidity = None
             sweetness = None
             body = None
