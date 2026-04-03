@@ -20,6 +20,19 @@ from koffe.scrapers.utils import (
 
 BASE_URL = "https://fuegotostadores.com"
 
+# Manually curated intensity values (acidity, sweetness, body) for coffees
+# whose pages don't list these fields. Sourced from tasting sessions.
+CURATED_BALANCE = {
+    "Café Fuego Negro": (3, 3, 3),
+    "Café Blend Fuego": (3, 3, 3),
+    "Café Brasil": (3, 4, 4),
+    "Café Bolivia Regional": (2, 4, 4),
+    "Café Blend Cósmico": (4, 4, 5),
+    "Café Betulia - Colombia": (3, 4, 3),
+    "Café Verano Cordobés - Cold Brew": (4, 3, 4),
+    "Juan Chamorro Castillo Lavado": (4, 5, 4),
+}
+
 # Each category page implies a fixed weight for all products in it.
 CATEGORY_PAGES = [
     {"url": f"{BASE_URL}/cafe-de-especialidad/cuartos-de-cafe/", "weight": 250},
@@ -195,10 +208,12 @@ class FuegoTostadoresScraper(BaseScraper):
         raw_roast = self._extract_field(page_text, ["tueste", "tostado", "roast"])
         roast_level = normalize_roast(raw_roast)
 
-        # Intensity fields are set manually in the DB; scraper does not overwrite them
-        acidity = None
-        sweetness = None
-        body = None
+        # Look up curated intensity values; falls back to None for unknown coffees
+        # (runner.py won't overwrite existing DB values when scraper returns None)
+        balance = CURATED_BALANCE.get(name)
+        acidity = balance[0] if balance else None
+        sweetness = balance[1] if balance else None
+        body = balance[2] if balance else None
 
         # Tasting notes
         tasting_notes = normalize_tasting_notes(self._extract_tasting_notes(page_text))
