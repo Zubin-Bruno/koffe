@@ -1161,7 +1161,7 @@ body.modal-open { overflow: hidden; }
   font-size: clamp(3rem, 8vw, 6.5rem);
   font-weight: 800;
   letter-spacing: -0.04em;
-  color: #2a1208;
+  color: #fff;
   line-height: 0.95;
   font-optical-sizing: auto;
 }
@@ -1170,10 +1170,25 @@ body.modal-open { overflow: hidden; }
 .hero-tagline {
   font-family: var(--font-body);
   font-size: clamp(0.9rem, 2vw, 1.15rem);
-  color: rgba(42, 18, 8, 0.7);
+  color: rgba(255, 255, 255, 0.85);
   line-height: 1.5;
   font-weight: 400;
   letter-spacing: 0.02em;
+}
+
+/* CTA link on landing hero */
+.hero-cta {
+  display: inline-block;
+  margin-top: 1.5rem;
+  font-size: clamp(1rem, 2.5vw, 1.3rem);
+  font-weight: 600;
+  color: #fff;
+  text-decoration: underline;
+  text-underline-offset: 4px;
+  transition: opacity 0.2s;
+}
+.hero-cta:hover {
+  opacity: 0.75;
 }
 
 /* Path Selection (Landing Page) */

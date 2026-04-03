@@ -39,38 +39,9 @@
     <!-- Dark gradient overlay so the white text stays readable -->
     <div class="hero-overlay"></div>
 
-    <!-- Top-right: theme toggle + GitHub link -->
-    <div class="hero-actions">
-      <button class="theme-toggle" id="theme-toggle" aria-label="Cambiar tema">
-        <!-- Dark roasted bean (shown when in light mode) -->
-        <svg id="bean-dark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
-          <ellipse cx="12" cy="12" rx="6" ry="9" fill="#3a1a08"/>
-          <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#915E40" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-        </svg>
-        <!-- Light roasted bean (shown when in dark mode) -->
-        <svg id="bean-light" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="32" height="32" aria-hidden="true">
-          <ellipse cx="12" cy="12" rx="6" ry="9" fill="#c9a060"/>
-          <path d="M12 3.5C9.5 6.5 9.5 10 12 12s2.5 5.5 0 8.5" stroke="#915E40" stroke-width="1.5" fill="none" stroke-linecap="round"/>
-        </svg>
-      </button>
-      <a class="hero-github" href="https://github.com/brunoamaral/koffe" target="_blank" rel="noopener">
-        GitHub
-      </a>
-    </div>
-
     <div class="hero-content">
-      <h1 class="hero-title">Koffe</h1>
-      <p class="hero-tagline">Descubrí tu próximo<br>café ideal</p>
-      
-      <div class="path-selection">
-        <a class="path-card" href="/buscar">
-          <div class="path-icon">
-            <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
-          </div>
-          <h2 class="path-title">Buscar con filtros</h2>
-          <p class="path-desc">Para cuando sabés exactamente qué querés o querés explorar por origen, método o tostador.</p>
-        </a>
-      </div>
+      <h1 class="hero-title">Buscá-Kafé</h1>
+      <a class="hero-tagline hero-cta" href="/buscar">Encontrá tu café</a>
     </div>
   </section>
 
@@ -93,27 +64,5 @@
     </div>
   </section>
 
-  <script>
-    (function() {
-      var btn = document.getElementById('theme-toggle');
-      var beanDark  = document.getElementById('bean-dark');
-      var beanLight = document.getElementById('bean-light');
-
-      function applyTheme(theme) {
-        document.documentElement.setAttribute('data-theme', theme);
-        localStorage.setItem('theme', theme);
-        // light mode → show dark bean; dark mode → show light bean
-        beanDark.style.display  = theme === 'light' ? 'block' : 'none';
-        beanLight.style.display = theme === 'dark'  ? 'block' : 'none';
-      }
-
-      applyTheme(document.documentElement.getAttribute('data-theme') || 'light');
-
-      btn.addEventListener('click', function() {
-        var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
-        applyTheme(next);
-      });
-    })();
-  </script>
 </body>
 </html>
