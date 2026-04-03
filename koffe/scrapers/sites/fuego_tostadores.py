@@ -210,7 +210,7 @@ class FuegoTostadoresScraper(BaseScraper):
 
         # Look up curated intensity values; falls back to None for unknown coffees
         # (runner.py won't overwrite existing DB values when scraper returns None)
-        balance = CURATED_BALANCE.get(name)
+        balance = CURATED_BALANCE.get(normalize_name(name))
         acidity = balance[0] if balance else None
         sweetness = balance[1] if balance else None
         body = balance[2] if balance else None
