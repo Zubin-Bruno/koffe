@@ -1170,25 +1170,29 @@ body.modal-open { overflow: hidden; }
 .hero-tagline {
   font-family: var(--font-body);
   font-size: clamp(0.9rem, 2vw, 1.15rem);
-  color: rgba(255, 255, 255, 0.85);
+  color: #fff;
   line-height: 1.5;
   font-weight: 400;
   letter-spacing: 0.02em;
 }
 
-/* CTA link on landing hero */
+/* CTA button on landing hero */
 .hero-cta {
   display: inline-block;
   margin-top: 1.5rem;
   font-size: clamp(1rem, 2.5vw, 1.3rem);
   font-weight: 600;
   color: #fff;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  transition: opacity 0.2s;
+  text-decoration: none;
+  border: 2px solid #fff;
+  border-radius: 2rem;
+  padding: 0.6rem 2rem;
+  background: transparent;
+  transition: background 0.3s, color 0.3s;
 }
 .hero-cta:hover {
-  opacity: 0.75;
+  background: #fff;
+  color: #1a1a1a;
 }
 
 /* Path Selection (Landing Page) */
