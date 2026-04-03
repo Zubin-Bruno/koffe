@@ -134,9 +134,20 @@ def _get_filter_options(db: Session) -> dict:
     and by the comparison search partial so the same dropdowns appear in both.
     """
     roasters = db.query(Roaster).filter(Roaster.is_active == True).all()
-    all_origins = sorted([r[0] for r in db.query(Coffee.origin_country).filter(Coffee.is_available == True).distinct() if r[0]])
-    all_processes = sorted([r[0] for r in db.query(Coffee.process).filter(Coffee.is_available == True).distinct() if r[0]])
-    all_varieties = sorted([r[0] for r in db.query(Coffee.variety).filter(Coffee.is_available == True).distinct() if r[0]])
+
+    def _dedupe(items):
+        res = {}
+        for i in sorted(items):
+            key = _strip_accents(i).lower()
+            if key not in res:
+                res[key] = i
+            elif len(i.encode('utf-8')) > len(res[key].encode('utf-8')):
+                res[key] = i
+        return sorted(res.values())
+
+    all_origins = _dedupe([r[0] for r in db.query(Coffee.origin_country).filter(Coffee.is_available == True).distinct() if r[0]])
+    all_processes = _dedupe([r[0] for r in db.query(Coffee.process).filter(Coffee.is_available == True).distinct() if r[0]])
+    all_varieties = _dedupe([r[0] for r in db.query(Coffee.variety).filter(Coffee.is_available == True).distinct() if r[0]])
 
     rows = db.query(Coffee.brew_methods).filter(Coffee.is_available == True).all()
     brew_set = set()
