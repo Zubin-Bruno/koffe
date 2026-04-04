@@ -115,62 +115,82 @@ def copy_bundled_images() -> int:
 
 
 def apply_curated_intensity() -> int:
-    """Apply curated intensity values to Fuego coffees that have NULL fields.
+    """Apply curated intensity values to roasters that have NULL fields.
 
-    The Fuego website doesn't list acidity/sweetness/body, so the scraper
-    embeds a CURATED_BALANCE dict with hand-picked values. But those values
-    only reach the DB when the scraper runs. This function patches existing
-    rows immediately on app startup so deploys take effect without waiting
-    for the next 3 AM scrape.
+    Some roasters (like Fuego) don't list acidity/sweetness/body on their
+    websites, so their scrapers embed CURATED_BALANCE dicts with hand-picked
+    values. But those values only reach the DB when the scraper runs. This
+    function patches existing rows immediately on app startup so deploys take
+    effect without waiting for the next 3 AM scrape.
 
     Returns the number of rows updated.
     """
-    from koffe.scrapers.sites.fuego_tostadores import CURATED_BALANCE
     from koffe.scrapers.utils import normalize_name
 
     db = SessionLocal()
     try:
-        roaster = db.query(Roaster).filter(Roaster.slug == "fuego-tostadores").first()
-        if not roaster:
-            logger.debug("Fuego roaster not in DB yet — skipping curated intensity")
-            return 0
+        # Roasters with curated intensity values
+        curated_roasters = {
+            "fuego-tostadores": "koffe.scrapers.sites.fuego_tostadores.CURATED_BALANCE",
+        }
 
-        coffees = db.query(Coffee).filter(Coffee.roaster_id == roaster.id).all()
-        updated = 0
+        total_updated = 0
 
-        for coffee in coffees:
-            balance = CURATED_BALANCE.get(normalize_name(coffee.name))
-            if not balance:
+        for slug, import_path in curated_roasters.items():
+            roaster = db.query(Roaster).filter(Roaster.slug == slug).first()
+            if not roaster:
+                logger.debug(f"Roaster '{slug}' not in DB yet — skipping curated intensity")
                 continue
 
-            # Only fill in fields that are still NULL — never overwrite existing data
-            needs_update = (
-                coffee.acidity is None
-                or coffee.sweetness is None
-                or coffee.body is None
-            )
-            if not needs_update:
+            # Dynamically import the CURATED_BALANCE dict
+            try:
+                module_path, attr_name = import_path.rsplit(".", 1)
+                module = __import__(module_path, fromlist=[attr_name])
+                curated_balance = getattr(module, attr_name)
+            except (ImportError, AttributeError, ValueError) as e:
+                logger.warning(f"Could not import {import_path}: {e}")
                 continue
 
-            if coffee.acidity is None:
-                coffee.acidity = balance[0]
-            if coffee.sweetness is None:
-                coffee.sweetness = balance[1]
-            if coffee.body is None:
-                coffee.body = balance[2]
+            coffees = db.query(Coffee).filter(Coffee.roaster_id == roaster.id).all()
+            updated = 0
 
-            updated += 1
-            logger.info(
-                f"Applied curated intensity to '{coffee.name}': "
-                f"A={balance[0]} S={balance[1]} B={balance[2]}"
-            )
+            for coffee in coffees:
+                balance = curated_balance.get(normalize_name(coffee.name))
+                if not balance:
+                    continue
 
-        if updated:
-            db.commit()
-            logger.info(f"Applied curated intensity to {updated} Fuego coffee(s)")
-        else:
-            logger.info("All Fuego coffees already have intensity values — nothing to patch")
+                # Only fill in fields that are still NULL — never overwrite existing data
+                needs_update = (
+                    coffee.acidity is None
+                    or coffee.sweetness is None
+                    or coffee.body is None
+                )
+                if not needs_update:
+                    continue
 
-        return updated
+                if coffee.acidity is None:
+                    coffee.acidity = balance[0]
+                if coffee.sweetness is None:
+                    coffee.sweetness = balance[1]
+                if coffee.body is None:
+                    coffee.body = balance[2]
+
+                updated += 1
+                logger.info(
+                    f"Applied curated intensity to '{slug}/{coffee.name}': "
+                    f"A={balance[0]} S={balance[1]} B={balance[2]}"
+                )
+
+            if updated:
+                db.commit()
+                logger.info(f"Applied curated intensity to {updated} {slug} coffee(s)")
+                total_updated += updated
+            else:
+                logger.debug(f"All {slug} coffees already have intensity values")
+
+        if total_updated == 0:
+            logger.info("No coffees needed intensity patching at startup")
+
+        return total_updated
     finally:
         db.close()

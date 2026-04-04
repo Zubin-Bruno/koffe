@@ -40,7 +40,7 @@
     </div>
 
     {# ── Intensity dots ── #}
-    {% if coffee.acidity or coffee.sweetness or coffee.body %}
+    {% if coffee.acidity is not none or coffee.sweetness is not none or coffee.body is not none %}
     <div class="detail-section detail-intensity">
       {% for label, value in [('Acidez', coffee.acidity), ('Dulzor', coffee.sweetness), ('Cuerpo', coffee.body)] %}
       <div class="intensity-row">

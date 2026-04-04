@@ -60,7 +60,7 @@
     {% endif %}
 
     {# Balance bars #}
-    {% if coffee.acidity or coffee.sweetness or coffee.body %}
+    {% if coffee.acidity is not none or coffee.sweetness is not none or coffee.body is not none %}
     <div class="exp-section">
       <p class="exp-section-label">Balance</p>
       <div class="exp-balance">
