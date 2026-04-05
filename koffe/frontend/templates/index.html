@@ -10,13 +10,16 @@
 </div>
 
 <div class="search-layout">
+  <button type="button" class="filter-drawer-toggle" id="filter-drawer-toggle">
+    Filtros
+  </button>
   <!-- Sidebar de filtros -->
   <aside class="search-sidebar">
     <form
       hx-get="/coffees"
       hx-target="#results"
       hx-trigger="change, submit, input delay:400ms from:input[type='text']"
-      hx-push-url="true"
+      hx-push-url="/buscar"
       id="filter-form"
     >
       <input type="hidden" name="show_all" id="show-all-input" value="{% if show_all %}true{% endif %}" />
@@ -67,7 +70,7 @@
         </div>
 
         <!-- Origen -->
-        <div class="sidebar-group" data-collapsible>
+        <div class="sidebar-group" data-collapsible data-collapsed>
           <label class="sidebar-label">Origen</label>
           <div class="sidebar-checkboxes scrollable-list">
             {% for o in origins %}
@@ -80,7 +83,7 @@
         </div>
 
         <!-- Método -->
-        <div class="sidebar-group" data-collapsible>
+        <div class="sidebar-group" data-collapsible data-collapsed>
           <label class="sidebar-label">Método</label>
           <div class="sidebar-checkboxes scrollable-list">
             {% for m in brew_methods_options %}
@@ -106,7 +109,7 @@
         </div>
 
         <!-- Proceso -->
-        <div class="sidebar-group" data-collapsible>
+        <div class="sidebar-group" data-collapsible data-collapsed>
           <label class="sidebar-label">Proceso</label>
           <div class="sidebar-checkboxes scrollable-list">
             {% for p in processes %}
@@ -119,7 +122,7 @@
         </div>
 
         <!-- Perfil Sensorial -->
-        <div class="sidebar-group">
+        <div class="sidebar-group" data-collapsible data-collapsed>
           <label class="sidebar-label">Perfil Sensorial</label>
           <div class="sidebar-intensity-grid">
             <div class="filter-group">
@@ -181,7 +184,7 @@
         </div>
 
         <!-- Precio -->
-        <div class="sidebar-group">
+        <div class="sidebar-group" data-collapsible data-collapsed>
           <label class="sidebar-label">Precio</label>
           <div class="sidebar-price-range">
             <input type="number" name="min_price" class="sidebar-input price-input" placeholder="Min $" value="{{ filters.min_price }}">
@@ -247,5 +250,15 @@
       document.getElementById('btn-show-all').classList.remove('active');
     }
   });
+
+  (function() {
+    var toggle = document.getElementById('filter-drawer-toggle');
+    var sidebar = document.querySelector('.search-sidebar');
+    if (!toggle || !sidebar) return;
+    toggle.addEventListener('click', function() {
+      sidebar.classList.toggle('is-open');
+      toggle.classList.toggle('is-active');
+    });
+  })();
 </script>
 {% endblock %}
