@@ -360,41 +360,40 @@ def normalize_origin(name: str | None, text: str | None) -> str | None:
     Extract a coffee origin country from the product name and/or description text.
 
     Searches the name first (more specific), then falls back to the full text.
-    Longer country names are checked before shorter ones to avoid substring
-    false matches (e.g. "Papua New Guinea" before "Guinea").
+    Uses word-boundary regex to avoid false substring matches (e.g. "el salvador"
+    inside "del Salvador"). Only ordering requirement: "Papua New Guinea" before
+    "Guinea" (real substring overlap); the rest is alphabetical.
 
     Returns the canonical country name, or None if no match.
     """
-    # Ordered: longer/more-specific names first to avoid substring collisions.
     _ORIGIN_KEYWORDS = [
-        # Multi-word names first
-        ("papua new guinea", "Papua New Guinea"), ("papúa nueva guinea", "Papua New Guinea"),
-        ("costa rica", "Costa Rica"),
-        ("el salvador", "El Salvador"),
-        # Single-word names
-        ("guatemala", "Guatemala"),
-        ("colombia", "Colombia"),
-        ("ethiopia", "Ethiopia"), ("etiopía", "Ethiopia"), ("etiopia", "Ethiopia"),
-        ("nicaragua", "Nicaragua"),
+        # Papua New Guinea must precede Guinea (substring overlap)
+        ("papúa nueva guinea", "Papúa Nueva Guinea"), ("papua new guinea", "Papúa Nueva Guinea"),
+        ("bolivia", "Bolivia"),
         ("brazil", "Brazil"), ("brasil", "Brazil"),
-        ("kenya", "Kenya"), ("kenia", "Kenya"),
+        ("burundi", "Burundi"),
+        ("colombia", "Colombia"),
+        ("congo", "Congo"),
+        ("costa rica", "Costa Rica"),
+        ("dominicana", "República Dominicana"),
+        ("ecuador", "Ecuador"),
+        ("el salvador", "El Salvador"),
+        ("ethiopia", "Ethiopia"), ("etiopía", "Ethiopia"), ("etiopia", "Ethiopia"),
+        ("guatemala", "Guatemala"),
+        ("guinea", "Guinea"),
         ("honduras", "Honduras"),
+        ("india", "India"),
+        ("indonesia", "Indonesia"),
+        ("jamaica", "Jamaica"),
+        ("kenya", "Kenya"), ("kenia", "Kenya"),
+        ("mexico", "México"), ("méxico", "México"),
+        ("nicaragua", "Nicaragua"),
         ("panama", "Panamá"), ("panamá", "Panamá"),
+        ("peru", "Perú"), ("perú", "Perú"),
         ("rwanda", "Rwanda"), ("ruanda", "Rwanda"),
         ("tanzania", "Tanzania"),
-        ("burundi", "Burundi"),
-        ("peru", "Perú"), ("perú", "Perú"),
-        ("bolivia", "Bolivia"),
-        ("yemen", "Yemen"),
-        ("indonesia", "Indonesia"),
-        ("india", "India"),
-        ("mexico", "México"), ("méxico", "México"),
         ("uganda", "Uganda"),
-        ("congo", "Congo"),
-        ("ecuador", "Ecuador"),
-        ("dominicana", "Dominican Republic"),
-        ("jamaica", "Jamaica"),
-        ("guinea", "Guinea"),
+        ("yemen", "Yemen"),
     ]
 
     for src_raw in (name, text):
@@ -402,7 +401,7 @@ def normalize_origin(name: str | None, text: str | None) -> str | None:
             continue
         src = src_raw.lower()
         for keyword, canonical in _ORIGIN_KEYWORDS:
-            if keyword in src:
+            if re.search(r'\b' + re.escape(keyword) + r'\b', src):
                 return canonical
     return None
 
