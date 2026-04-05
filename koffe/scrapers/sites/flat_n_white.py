@@ -16,6 +16,7 @@ from koffe.scrapers.utils import (
     clean_text,
     normalize_brew_methods,
     normalize_name,
+    normalize_origin,
     normalize_process,
     normalize_roast,
     normalize_tasting_notes,
@@ -139,7 +140,7 @@ class FlatNWhiteScraper(BaseScraper):
 
         # Metadata from page body text
         page_text = tree.body.text() if tree.body else ""
-        origin_country = self._extract_origin(name, page_text)
+        origin_country = normalize_origin(name, page_text)
         process = None
         _process_raw = self._extract_field(
             page_text,
@@ -281,30 +282,6 @@ class FlatNWhiteScraper(BaseScraper):
 
         return variations
 
-    def _extract_origin(self, name: str, text: str) -> str | None:
-        countries = [
-            ("guatemala", "Guatemala"),
-            ("peru", "Perú"), ("perú", "Perú"),
-            ("colombia", "Colombia"),
-            ("ethiopia", "Ethiopia"), ("etiopía", "Ethiopia"), ("etiopia", "Ethiopia"),
-            ("nicaragua", "Nicaragua"),
-            ("costa rica", "Costa Rica"),
-            ("brazil", "Brazil"), ("brasil", "Brazil"),
-            ("kenya", "Kenya"), ("kenia", "Kenya"),
-            ("el salvador", "El Salvador"),
-            ("honduras", "Honduras"),
-            ("panama", "Panamá"), ("panamá", "Panamá"),
-            ("rwanda", "Rwanda"),
-            ("tanzania", "Tanzania"),
-            ("burundi", "Burundi"),
-            ("yemen", "Yemen"),
-            ("bolivia", "Bolivia"),
-        ]
-        for src in (name.lower(), text.lower()):
-            for keyword, canonical in countries:
-                if keyword in src:
-                    return canonical
-        return None
 
     def _extract_field(self, text: str, labels: list[str]) -> str | None:
         for label in labels:

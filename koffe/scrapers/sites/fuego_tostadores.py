@@ -12,6 +12,7 @@ from koffe.scrapers.base import BaseScraper, CoffeeData
 from koffe.scrapers.utils import (
     clean_text,
     normalize_name,
+    normalize_origin,
     normalize_process,
     normalize_roast,
     normalize_tasting_notes,
@@ -185,7 +186,7 @@ class FuegoTostadoresScraper(BaseScraper):
         # Use only the description element for field extraction to avoid JSON-LD/script noise
         page_text = desc_node.text() if desc_node else (tree.body.text() if tree.body else "")
 
-        origin_country = self._extract_origin(name, page_text)
+        origin_country = normalize_origin(name, page_text)
 
         # Process: prefer name, fall back to page metadata
         process = normalize_process(self._extract_process_from_name(name))
@@ -247,32 +248,6 @@ class FuegoTostadoresScraper(BaseScraper):
         )
 
     # --- Helper methods (same as Puerto Blest, generic for Tiendanube) ---
-
-    def _extract_origin(self, name: str, text: str) -> str | None:
-        countries = [
-            ("guatemala", "Guatemala"),
-            ("peru", "Perú"), ("perú", "Perú"),
-            ("colombia", "Colombia"),
-            ("ethiopia", "Ethiopia"), ("etiopía", "Ethiopia"), ("etiopia", "Ethiopia"),
-            ("nicaragua", "Nicaragua"),
-            ("costa rica", "Costa Rica"),
-            ("brazil", "Brazil"), ("brasil", "Brazil"),
-            ("kenya", "Kenya"), ("kenia", "Kenya"),
-            ("el salvador", "El Salvador"),
-            ("honduras", "Honduras"),
-            ("panama", "Panamá"), ("panamá", "Panamá"),
-            ("rwanda", "Rwanda"),
-            ("bolivia", "Bolivia"),
-        ]
-        lower_name = name.lower()
-        for keyword, canonical in countries:
-            if keyword in lower_name:
-                return canonical
-        lower = text.lower()
-        for keyword, canonical in countries:
-            if keyword in lower:
-                return canonical
-        return None
 
     def _extract_process_from_name(self, name: str) -> str | None:
         lower = name.lower()

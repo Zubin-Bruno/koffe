@@ -11,6 +11,7 @@ from koffe.scrapers.base import BaseScraper, CoffeeData
 from koffe.scrapers.utils import (
     clean_text,
     normalize_name,
+    normalize_origin,
     normalize_process,
     normalize_roast,
     parse_price_cents,
@@ -65,7 +66,7 @@ class GrainsArScraper(BaseScraper):
                                 is_available=variant.get("available", True),
                                 image_url=image_url,
                                 description=description,
-                                origin_country=self._extract_origin(tags, product["title"]),
+                                origin_country=normalize_origin(product["title"], " ".join(tags)),
                                 process=normalize_process(self._find_tag(tags, ["natural", "washed", "honey", "lavado", "seco"])),
                                 roast_level=normalize_roast(self._find_tag(tags, ["light", "medium", "dark", "claro", "medio", "oscuro"])),
                                 attributes={"tags": product.get("tags", [])},
@@ -97,28 +98,4 @@ class GrainsArScraper(BaseScraper):
                 return tag
         return None
 
-    CANONICAL_COUNTRY = {
-        "ethiopia": "Ethiopia", "etiopía": "Ethiopia", "etiopia": "Ethiopia",
-        "colombia": "Colombia",
-        "brazil": "Brazil", "brasil": "Brazil",
-        "peru": "Perú", "perú": "Perú",
-        "kenya": "Kenya", "kenia": "Kenya",
-        "guatemala": "Guatemala",
-        "rwanda": "Rwanda", "ruanda": "Rwanda",
-        "honduras": "Honduras",
-        "costa rica": "Costa Rica",
-        "panama": "Panamá", "panamá": "Panamá",
-        "el salvador": "El Salvador",
-        "nicaragua": "Nicaragua",
-        "burundi": "Burundi",
-        "indonesia": "Indonesia",
-        "yemen": "Yemen",
-        "bolivia": "Bolivia",
-    }
 
-    def _extract_origin(self, tags: list[str], title: str) -> str | None:
-        text = " ".join(tags) + " " + title.lower()
-        for keyword, canonical in self.CANONICAL_COUNTRY.items():
-            if keyword in text:
-                return canonical
-        return None

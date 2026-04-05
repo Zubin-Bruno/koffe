@@ -355,6 +355,58 @@ def normalize_tasting_notes(raw_notes: list[str] | None) -> list[str] | None:
     return result if result else None
 
 
+def normalize_origin(name: str | None, text: str | None) -> str | None:
+    """
+    Extract a coffee origin country from the product name and/or description text.
+
+    Searches the name first (more specific), then falls back to the full text.
+    Longer country names are checked before shorter ones to avoid substring
+    false matches (e.g. "Papua New Guinea" before "Guinea").
+
+    Returns the canonical country name, or None if no match.
+    """
+    # Ordered: longer/more-specific names first to avoid substring collisions.
+    _ORIGIN_KEYWORDS = [
+        # Multi-word names first
+        ("papua new guinea", "Papua New Guinea"), ("papúa nueva guinea", "Papua New Guinea"),
+        ("costa rica", "Costa Rica"),
+        ("el salvador", "El Salvador"),
+        # Single-word names
+        ("guatemala", "Guatemala"),
+        ("colombia", "Colombia"),
+        ("ethiopia", "Ethiopia"), ("etiopía", "Ethiopia"), ("etiopia", "Ethiopia"),
+        ("nicaragua", "Nicaragua"),
+        ("brazil", "Brazil"), ("brasil", "Brazil"),
+        ("kenya", "Kenya"), ("kenia", "Kenya"),
+        ("honduras", "Honduras"),
+        ("panama", "Panamá"), ("panamá", "Panamá"),
+        ("rwanda", "Rwanda"), ("ruanda", "Rwanda"),
+        ("tanzania", "Tanzania"),
+        ("burundi", "Burundi"),
+        ("peru", "Perú"), ("perú", "Perú"),
+        ("bolivia", "Bolivia"),
+        ("yemen", "Yemen"),
+        ("indonesia", "Indonesia"),
+        ("india", "India"),
+        ("mexico", "México"), ("méxico", "México"),
+        ("uganda", "Uganda"),
+        ("congo", "Congo"),
+        ("ecuador", "Ecuador"),
+        ("dominicana", "Dominican Republic"),
+        ("jamaica", "Jamaica"),
+        ("guinea", "Guinea"),
+    ]
+
+    for src_raw in (name, text):
+        if not src_raw:
+            continue
+        src = src_raw.lower()
+        for keyword, canonical in _ORIGIN_KEYWORDS:
+            if keyword in src:
+                return canonical
+    return None
+
+
 def normalize_roast(raw: str | None) -> str | None:
     """
     Normalize roast level to one of: Light, Medium-Light, Medium, Medium-Dark, Dark.

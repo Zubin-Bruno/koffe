@@ -13,6 +13,7 @@ from koffe.scrapers.utils import (
     clean_text,
     normalize_brew_methods,
     normalize_name,
+    normalize_origin,
     normalize_process,
     normalize_tasting_notes,
     parse_weight_grams,
@@ -147,7 +148,7 @@ class CuervoCafeScraper(BaseScraper):
         # The _extract_field regex stops at \n, preventing field bleeding.
         page_text = desc_node.text(separator="\n") if desc_node else (tree.body.text(separator="\n") if tree.body else "")
 
-        origin_country = self._extract_origin(page_text)
+        origin_country = normalize_origin(name, page_text)
         process = normalize_process(self._extract_field(page_text, ["proceso", "process", "beneficio"]))
         variety = clean_text(self._extract_field(page_text, ["variedad", "variety", "variedades"]))
         altitude_masl = self._extract_altitude(page_text)
@@ -271,28 +272,6 @@ class CuervoCafeScraper(BaseScraper):
                 value = match.group(1).strip().rstrip(".,;")
                 if value:
                     return value
-        return None
-
-    def _extract_origin(self, text: str) -> str | None:
-        countries = [
-            ("colombia", "Colombia"),
-            ("ethiopia", "Ethiopia"), ("etiopía", "Ethiopia"), ("etiopia", "Ethiopia"),
-            ("kenya", "Kenya"), ("kenia", "Kenya"),
-            ("guatemala", "Guatemala"),
-            ("peru", "Perú"), ("perú", "Perú"),
-            ("brazil", "Brazil"), ("brasil", "Brazil"),
-            ("costa rica", "Costa Rica"),
-            ("panama", "Panamá"), ("panamá", "Panamá"),
-            ("el salvador", "El Salvador"),
-            ("honduras", "Honduras"),
-            ("nicaragua", "Nicaragua"),
-            ("rwanda", "Rwanda"),
-            ("bolivia", "Bolivia"),
-        ]
-        lower = text.lower()
-        for keyword, canonical in countries:
-            if keyword in lower:
-                return canonical
         return None
 
     def _extract_altitude(self, text: str) -> int | None:

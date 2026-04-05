@@ -12,6 +12,7 @@ from koffe.scrapers.base import BaseScraper, CoffeeData
 from koffe.scrapers.utils import (
     clean_text,
     normalize_name,
+    normalize_origin,
     normalize_process,
     normalize_tasting_notes,
     parse_price_cents,
@@ -221,7 +222,7 @@ class PuertoBlestScraper(BaseScraper):
         # Extract structured fields from page text
         page_text = tree.body.text() if tree.body else ""
 
-        origin_country = self._extract_origin(name, page_text)
+        origin_country = normalize_origin(name, page_text)
         # Prefer process from name (most reliable for this site)
         process = normalize_process(self._extract_process_from_name(name))
         if not process:
@@ -285,34 +286,6 @@ class PuertoBlestScraper(BaseScraper):
             brew_methods=brew_methods,
             attributes=attributes,
         )
-
-    def _extract_origin(self, name: str, text: str) -> str | None:
-        countries = [
-            ("guatemala", "Guatemala"),
-            ("peru", "Perú"), ("perú", "Perú"),
-            ("colombia", "Colombia"),
-            ("ethiopia", "Ethiopia"), ("etiopía", "Ethiopia"), ("etiopia", "Ethiopia"),
-            ("nicaragua", "Nicaragua"),
-            ("costa rica", "Costa Rica"),
-            ("brazil", "Brazil"), ("brasil", "Brazil"),
-            ("kenya", "Kenya"), ("kenia", "Kenya"),
-            ("el salvador", "El Salvador"),
-            ("honduras", "Honduras"),
-            ("panama", "Panamá"), ("panamá", "Panamá"),
-            ("rwanda", "Rwanda"),
-            ("bolivia", "Bolivia"),
-        ]
-        # Check name first (most reliable)
-        lower_name = name.lower()
-        for keyword, canonical in countries:
-            if keyword in lower_name:
-                return canonical
-        # Fall back to full page text
-        lower = text.lower()
-        for keyword, canonical in countries:
-            if keyword in lower:
-                return canonical
-        return None
 
     def _extract_process_from_name(self, name: str) -> str | None:
         lower = name.lower()
