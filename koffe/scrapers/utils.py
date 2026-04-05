@@ -359,11 +359,14 @@ def normalize_origin(name: str | None, text: str | None) -> str | None:
     """
     Extract a coffee origin country from the product name and/or description text.
 
-    Searches the name first (more specific), then falls back to the full text.
-    Uses word-boundary regex to avoid false substring matches (e.g. "el salvador"
-    inside "del Salvador"). Only ordering requirement: "Papua New Guinea" before
-    "Guinea" (real substring overlap); the rest is alphabetical.
+    Three-step strategy:
+      1. Search product name for country keywords (most reliable).
+      2. Search for labeled origin fields in text (e.g. "PAÍS DE ORIGEN: Colombia")
+         and match only within the label's value — avoids street-name false positives.
+      3. Broad keyword search on full text, but only trusts the result if exactly
+         one country is found. Multiple countries → ambiguous → returns None.
 
+    Uses word-boundary regex to avoid false substring matches.
     Returns the canonical country name, or None if no match.
     """
     _ORIGIN_KEYWORDS = [
@@ -396,14 +399,41 @@ def normalize_origin(name: str | None, text: str | None) -> str | None:
         ("yemen", "Yemen"),
     ]
 
-    for src_raw in (name, text):
-        if not src_raw:
-            continue
-        src = src_raw.lower()
+    # Step 1: Search product name (most reliable source)
+    if name:
+        src = name.lower()
         for keyword, canonical in _ORIGIN_KEYWORDS:
             if re.search(r'\b' + re.escape(keyword) + r'\b', src):
                 return canonical
-    return None
+
+    if not text:
+        return None
+    # Insert spaces at case transitions (e.g. "ColombiaREGIÓN" → "Colombia REGIÓN")
+    # to handle run-together HTML text from Tiendanube product descriptions.
+    text_spaced = re.sub(r'([a-záéíóúñü])([A-ZÁÉÍÓÚÑÜ])', r'\1 \2', text)
+    src = text_spaced.lower()
+
+    # Step 2: Search for a labeled origin field (e.g. "PAÍS DE ORIGEN: Colombia")
+    labeled = re.search(
+        r'(?:origen|origin|país|country|procedencia)[:\s]+([^\n]{3,40})',
+        src,
+    )
+    if labeled:
+        field_value = labeled.group(1)
+        for keyword, canonical in _ORIGIN_KEYWORDS:
+            if re.search(r'\b' + re.escape(keyword) + r'\b', field_value):
+                return canonical
+
+    # Step 3: Broad keyword search — only trust if exactly one country found
+    found = []
+    seen = set()
+    for keyword, canonical in _ORIGIN_KEYWORDS:
+        if canonical not in seen and re.search(r'\b' + re.escape(keyword) + r'\b', src):
+            found.append(canonical)
+            seen.add(canonical)
+            if len(found) > 1:
+                return None  # ambiguous — bail out
+    return found[0] if found else None
 
 
 def normalize_roast(raw: str | None) -> str | None:
