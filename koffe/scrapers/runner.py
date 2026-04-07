@@ -204,6 +204,22 @@ def _upsert_coffees(
                 )
             )
 
+    # Guard: if the scraper returned 0 coffees but some were previously
+    # available, this is likely a transient page-load failure — skip the
+    # mark-unavailable step so we don't nuke an entire roaster's catalog.
+    if not seen_external_ids:
+        existing_count = db.query(Coffee).filter(
+            Coffee.roaster_id == roaster.id,
+            Coffee.is_available == True,
+        ).count()
+        if existing_count > 0:
+            logger.warning(
+                f"Scraper returned 0 coffees but {existing_count} were previously "
+                f"available — skipping mark-unavailable (possible page load failure)"
+            )
+            db.commit()
+            return
+
     # Mark coffees not seen in this run as unavailable
     db.query(Coffee).filter(
         Coffee.roaster_id == roaster.id,

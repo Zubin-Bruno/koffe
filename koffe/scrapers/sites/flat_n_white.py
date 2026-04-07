@@ -49,6 +49,20 @@ class FlatNWhiteScraper(BaseScraper):
         return coffees
 
     async def _get_product_links(self, browser) -> list[str]:
+        urls = await self._fetch_listing_page(browser)
+
+        # Retry once if 0 links found — WooCommerce/XStore sometimes returns
+        # a skeleton page on the first load (transient CDN or JS issue).
+        if not urls:
+            import asyncio
+            logger.warning("[flat-n-white] 0 product links on first attempt, retrying in 5s…")
+            await asyncio.sleep(5)
+            urls = await self._fetch_listing_page(browser)
+
+        return urls
+
+    async def _fetch_listing_page(self, browser) -> list[str]:
+        """Load the listing page once and extract product links."""
         page = await browser.new_page()
         try:
             await page.goto(LISTING_URL, wait_until="networkidle", timeout=60000)
