@@ -1,14 +1,4 @@
-{% if not has_filters and not show_all %}
-{# ── Welcome state: no filters active yet ── #}
-<div class="welcome-state">
-  <svg class="welcome-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" aria-hidden="true">
-    <ellipse cx="32" cy="32" rx="14" ry="22" fill="currentColor" opacity="0.15"/>
-    <path d="M32 10C26 16 26 24 32 32s6 16 0 22" stroke="currentColor" stroke-width="2.5" fill="none" stroke-linecap="round" opacity="0.3"/>
-  </svg>
-  <h2 class="welcome-title">Encontrá el café que buscás</h2>
-  <p class="welcome-subtitle">Usá los filtros para explorar disintos cafés</p>
-</div>
-{% elif coffees %}
+{% if coffees %}
 {# ── Results found ── #}
 <p class="results-count">{{ total }} café{{ 's' if total != 1 else '' }} encontrado{{ 's' if total != 1 else '' }}</p>
 

@@ -62,10 +62,29 @@ class FlatNWhiteScraper(BaseScraper):
         return urls
 
     async def _fetch_listing_page(self, browser) -> list[str]:
-        """Load the listing page once and extract product links."""
+        """Load the listing page once and extract product links.
+
+        Flat & White uses "Rocket LazyLoadScripts" (a WordPress optimization
+        plugin) that defers all JavaScript until a user interaction event
+        (mouse move, scroll, touch, or keypress).  We simulate a mouse move
+        so the deferred scripts execute and product elements render.
+        """
         page = await browser.new_page()
         try:
             await page.goto(LISTING_URL, wait_until="networkidle", timeout=60000)
+
+            # Trigger Rocket LazyLoadScripts by simulating user interaction
+            await page.mouse.move(100, 200)
+
+            # Wait for product elements to appear after lazy scripts execute
+            try:
+                await page.wait_for_selector(
+                    "li.product a, a.woocommerce-LoopProduct-link, .products .product a",
+                    timeout=15000,
+                )
+            except Exception:
+                logger.warning("[flat-n-white] Products did not appear after triggering lazy load")
+
             html = await page.content()
         finally:
             await page.close()

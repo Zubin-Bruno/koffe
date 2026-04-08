@@ -204,21 +204,34 @@ def _upsert_coffees(
                 )
             )
 
-    # Guard: if the scraper returned 0 coffees but some were previously
-    # available, this is likely a transient page-load failure — skip the
-    # mark-unavailable step so we don't nuke an entire roaster's catalog.
-    if not seen_external_ids:
-        existing_count = db.query(Coffee).filter(
-            Coffee.roaster_id == roaster.id,
-            Coffee.is_available == True,
-        ).count()
-        if existing_count > 0:
-            logger.warning(
-                f"Scraper returned 0 coffees but {existing_count} were previously "
-                f"available — skipping mark-unavailable (possible page load failure)"
-            )
-            db.commit()
-            return
+    # Guard against empty or partial scrape failures nuking a roaster's catalog.
+    existing_available_count = db.query(Coffee).filter(
+        Coffee.roaster_id == roaster.id,
+        Coffee.is_available == True,
+    ).count()
+
+    # Case 1: Scraper returned 0 coffees but some exist → skip mark-unavailable
+    if not seen_external_ids and existing_available_count > 0:
+        logger.warning(
+            f"Scraper returned 0 coffees but {existing_available_count} were previously "
+            f"available — skipping mark-unavailable (possible page load failure)"
+        )
+        db.commit()
+        return
+
+    # Case 2: Scraper returned fewer than 50% of existing available coffees
+    # (and there were at least 3 previously) → likely a partial failure
+    if (
+        existing_available_count >= 3
+        and len(seen_external_ids) < existing_available_count * 0.5
+    ):
+        logger.warning(
+            f"Scraper returned only {len(seen_external_ids)} coffees but "
+            f"{existing_available_count} were previously available "
+            f"(< 50%) — skipping mark-unavailable (possible partial failure)"
+        )
+        db.commit()
+        return
 
     # Mark coffees not seen in this run as unavailable
     db.query(Coffee).filter(

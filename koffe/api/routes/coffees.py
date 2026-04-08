@@ -309,19 +309,11 @@ async def index(
         tasting_note,
     ) or include_incomplete or min_price_int is not None or max_price_int is not None
 
-    # Check if "show all" was requested via query param
-    show_all = request.query_params.get("show_all") == "true"
-
     total_available = db.query(Coffee).filter(Coffee.is_available == True).count()
 
-    if show_all:
-        q = db.query(Coffee).filter(Coffee.is_available == True)
-        coffees = q.join(Roaster).order_by(Roaster.name, Coffee.name).all()
-    elif has_filters:
-        q = db.query(Coffee).filter(Coffee.is_available == True)
-        if not include_incomplete:
-             pass
+    q = db.query(Coffee).filter(Coffee.is_available == True)
 
+    if has_filters:
         q = _apply_filters(q, origin, process, roaster_id_int,
                            acidity_min_int, acidity_max_int,
                            sweetness_min_int, sweetness_max_int,
@@ -331,10 +323,9 @@ async def index(
             q = q.filter(Coffee.price_cents >= min_price_int * 100)
         if max_price_int is not None:
             q = q.filter(Coffee.price_cents <= max_price_int * 100)
-
         coffees = q.order_by(Coffee.name).limit(200).all()
     else:
-        coffees = []
+        coffees = q.join(Roaster).order_by(Roaster.name, Coffee.name).all()
 
     opts = _get_filter_options(db)
 
@@ -363,7 +354,6 @@ async def index(
             "total": len(coffees),
             "total_available": total_available,
             "has_filters": has_filters,
-            "show_all": show_all,
         },
     )
 
@@ -416,14 +406,9 @@ async def coffees_partial(
         tasting_note,
     ) or include_incomplete or min_price_int is not None or max_price_int is not None
 
-    # Check if "show all" was requested via query param
-    show_all = request.query_params.get("show_all") == "true"
+    q = db.query(Coffee).filter(Coffee.is_available == True)
 
-    if show_all:
-        q = db.query(Coffee).filter(Coffee.is_available == True)
-        coffees = q.join(Roaster).order_by(Roaster.name, Coffee.name).all()
-    elif has_filters:
-        q = db.query(Coffee).filter(Coffee.is_available == True)
+    if has_filters:
         q = _apply_filters(q, origin, process, roaster_id_int,
                            acidity_min_int, acidity_max_int,
                            sweetness_min_int, sweetness_max_int,
@@ -437,7 +422,7 @@ async def coffees_partial(
 
         coffees = q.order_by(Coffee.name).limit(200).all()
     else:
-        coffees = []
+        coffees = q.join(Roaster).order_by(Roaster.name, Coffee.name).all()
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
@@ -446,7 +431,6 @@ async def coffees_partial(
             "coffees": [_coffee_to_dict(c) for c in coffees],
             "total": len(coffees),
             "has_filters": has_filters,
-            "show_all": show_all,
         },
     )
 
@@ -543,5 +527,9 @@ async def compare_detail(
     templates = request.app.state.templates
     return templates.TemplateResponse(
         request, "compare_detail.html",
-        {"coffee": _coffee_to_dict(coffee), "slot": slot},
+        {
+            "coffee": _coffee_to_dict(coffee),
+            "slot": slot,
+            "query_string": str(request.url.query)
+        },
     )
