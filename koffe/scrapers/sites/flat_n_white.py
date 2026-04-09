@@ -71,46 +71,71 @@ class FlatNWhiteScraper(BaseScraper):
     async def _fetch_listing_page(self, browser) -> list[str]:
         """Load the listing page once and extract product links.
 
-        Flat & White uses "Rocket LazyLoadScripts" (a WordPress optimization
-        plugin) that defers all JavaScript until a user interaction event
-        (mouse move, scroll, touch, or keypress).  We simulate a mouse move
-        so the deferred scripts execute and product elements render.
+        Flat & White uses "Rocket LazyLoadScripts" (WP Rocket v2.0.3) that
+        defers all JavaScript until a user interaction event.  Rocket listens
+        on **window** (not document) and **ignores the first mousemove**.  It
+        responds to: mousedown, touchstart, keydown, etc.
+
+        We use four complementary strategies, each more aggressive:
         """
         page = await browser.new_page()
         try:
             await page.goto(LISTING_URL, wait_until="networkidle", timeout=60000)
 
-            # Trigger Rocket LazyLoadScripts — this WordPress plugin defers all
-            # JS until it detects a real user interaction.  A single mouse.move
-            # is unreliable in headless Chromium on Render, so we use three
-            # complementary strategies:
-
-            # Strategy 1: JavaScript dispatchEvent — fire the events that
-            # Rocket explicitly listens for, directly on `document`.
+            # Strategy 1: JavaScript dispatchEvent — fire events that Rocket
+            # actually responds to, on `window` (where Rocket listens).
+            # Rocket ignores the first mousemove, so we use mousedown,
+            # touchstart, and keydown instead.
             await page.evaluate("""() => {
-                const events = ['mousemove', 'mouseover', 'keydown', 'scroll', 'touchstart'];
-                events.forEach(type => {
-                    document.dispatchEvent(new Event(type, { bubbles: true }));
+                ['mousedown', 'touchstart', 'keydown'].forEach(type => {
+                    window.dispatchEvent(new Event(type, { bubbles: true }));
                 });
             }""")
 
-            # Strategy 2: Playwright mouse.move — keeps the "real" browser
-            # event path as a fallback for Rocket versions that ignore
-            # synthetic JS events.
-            await page.mouse.move(100, 200)
+            # Strategy 2: Playwright mouse.click — a click fires mousedown +
+            # mouseup + click, all of which Rocket listens for.  (mouse.move
+            # only fires mousemove, which Rocket ignores.)
+            await page.mouse.click(100, 200)
 
             # Strategy 3: scroll — triggers Intersection Observers and any
             # scroll-based lazy loaders.
             await page.evaluate("window.scrollBy(0, 300)")
 
             # Wait for product elements to appear after lazy scripts execute
+            products_appeared = True
             try:
                 await page.wait_for_selector(
                     "li.product a, a.woocommerce-LoopProduct-link, .products .product a",
                     timeout=20000,
                 )
             except Exception:
+                products_appeared = False
                 logger.warning("[flat-n-white] Products did not appear after triggering lazy load")
+
+            # Strategy 4 (nuclear): If products still haven't appeared,
+            # directly execute Rocket-deferred scripts by changing their type
+            # from "rocketlazyloadscript" back to real script elements.
+            if not products_appeared:
+                logger.info("[flat-n-white] Attempting direct Rocket script bypass…")
+                await page.evaluate("""() => {
+                    document.querySelectorAll('script[type="rocketlazyloadscript"]').forEach(old => {
+                        const s = document.createElement('script');
+                        [...old.attributes].forEach(a => {
+                            if (a.name === 'type') return;
+                            s.setAttribute(a.name === 'data-rocket-src' ? 'src' : a.name, a.value);
+                        });
+                        if (old.textContent) s.textContent = old.textContent;
+                        old.parentNode.replaceChild(s, old);
+                    });
+                }""")
+                # Wait again for products to render after forced script execution
+                try:
+                    await page.wait_for_selector(
+                        "li.product a, a.woocommerce-LoopProduct-link, .products .product a",
+                        timeout=10000,
+                    )
+                except Exception:
+                    logger.warning("[flat-n-white] Products still missing after Rocket bypass")
 
             html = await page.content()
         finally:
