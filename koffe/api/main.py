@@ -44,6 +44,13 @@ async def lifespan(app: FastAPI):
     if freshly_seeded:
         scheduler.add_job(run_all_scrapers, "date")
         logger.info("Fresh DB detected — triggered immediate one-shot scrape")
+    else:
+        # Existing DB — check for roasters in corrupted state (coffees in DB
+        # but all marked unavailable) and re-scrape just those.
+        from koffe.scrapers.runner import run_recovery_scrapes
+
+        scheduler.add_job(run_recovery_scrapes, "date")
+        logger.info("Existing DB — scheduled recovery check")
 
     yield
 

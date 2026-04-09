@@ -51,12 +51,19 @@ class FlatNWhiteScraper(BaseScraper):
     async def _get_product_links(self, browser) -> list[str]:
         urls = await self._fetch_listing_page(browser)
 
-        # Retry once if 0 links found — WooCommerce/XStore sometimes returns
-        # a skeleton page on the first load (transient CDN or JS issue).
+        # Retry up to 2 more times if 0 links found — WooCommerce/XStore
+        # sometimes returns a skeleton page on the first load (transient CDN
+        # or JS issue).  The third attempt waits longer to give the CDN time.
         if not urls:
             import asyncio
             logger.warning("[flat-n-white] 0 product links on first attempt, retrying in 5s…")
             await asyncio.sleep(5)
+            urls = await self._fetch_listing_page(browser)
+
+        if not urls:
+            import asyncio
+            logger.warning("[flat-n-white] 0 product links on second attempt, retrying in 10s…")
+            await asyncio.sleep(10)
             urls = await self._fetch_listing_page(browser)
 
         return urls
@@ -73,14 +80,34 @@ class FlatNWhiteScraper(BaseScraper):
         try:
             await page.goto(LISTING_URL, wait_until="networkidle", timeout=60000)
 
-            # Trigger Rocket LazyLoadScripts by simulating user interaction
+            # Trigger Rocket LazyLoadScripts — this WordPress plugin defers all
+            # JS until it detects a real user interaction.  A single mouse.move
+            # is unreliable in headless Chromium on Render, so we use three
+            # complementary strategies:
+
+            # Strategy 1: JavaScript dispatchEvent — fire the events that
+            # Rocket explicitly listens for, directly on `document`.
+            await page.evaluate("""() => {
+                const events = ['mousemove', 'mouseover', 'keydown', 'scroll', 'touchstart'];
+                events.forEach(type => {
+                    document.dispatchEvent(new Event(type, { bubbles: true }));
+                });
+            }""")
+
+            # Strategy 2: Playwright mouse.move — keeps the "real" browser
+            # event path as a fallback for Rocket versions that ignore
+            # synthetic JS events.
             await page.mouse.move(100, 200)
+
+            # Strategy 3: scroll — triggers Intersection Observers and any
+            # scroll-based lazy loaders.
+            await page.evaluate("window.scrollBy(0, 300)")
 
             # Wait for product elements to appear after lazy scripts execute
             try:
                 await page.wait_for_selector(
                     "li.product a, a.woocommerce-LoopProduct-link, .products .product a",
-                    timeout=15000,
+                    timeout=20000,
                 )
             except Exception:
                 logger.warning("[flat-n-white] Products did not appear after triggering lazy load")

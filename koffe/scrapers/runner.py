@@ -76,6 +76,45 @@ async def run_all_scrapers() -> None:
         db.close()
 
 
+async def run_recovery_scrapes() -> None:
+    """Re-scrape roasters whose coffees are all marked unavailable (corrupted state).
+
+    Called on every server startup (for existing DBs).  If no roasters need
+    recovery the function returns immediately without launching Playwright.
+    """
+    db = SessionLocal()
+    try:
+        roasters = db.query(Roaster).filter(Roaster.is_active == True).all()
+        needs_recovery: list[Roaster] = []
+
+        for roaster in roasters:
+            total = db.query(Coffee).filter(Coffee.roaster_id == roaster.id).count()
+            available = db.query(Coffee).filter(
+                Coffee.roaster_id == roaster.id,
+                Coffee.is_available == True,
+            ).count()
+            if total > 0 and available == 0:
+                logger.warning(
+                    f"[recovery] {roaster.slug}: {total} coffees in DB but 0 available — will re-scrape"
+                )
+                needs_recovery.append(roaster)
+
+        if not needs_recovery:
+            logger.info("[recovery] All roasters healthy — no recovery needed")
+            return
+
+        logger.info(f"[recovery] Launching Playwright for {len(needs_recovery)} roaster(s)")
+        async with async_playwright() as p:
+            browser = await p.chromium.launch(headless=True)
+            for roaster in needs_recovery:
+                await _scrape_roaster(db, browser, roaster)
+            await browser.close()
+
+        logger.info("[recovery] Recovery scrapes finished")
+    finally:
+        db.close()
+
+
 async def _scrape_roaster(db: Session, browser, roaster: Roaster) -> None:
     run = ScrapeRun(roaster_id=roaster.id, started_at=datetime.utcnow())
     db.add(run)
@@ -209,6 +248,18 @@ def _upsert_coffees(
         Coffee.roaster_id == roaster.id,
         Coffee.is_available == True,
     ).count()
+
+    # Case 0: Scraper returned 0 coffees and all existing are already unavailable
+    # — this is a corrupted state that recovery should fix on next startup.
+    total_coffees = db.query(Coffee).filter(Coffee.roaster_id == roaster.id).count()
+    if not seen_external_ids and existing_available_count == 0 and total_coffees > 0:
+        logger.error(
+            f"[{roaster.slug}] CORRUPTED STATE: scraper returned 0 coffees and all "
+            f"{total_coffees} existing coffees are already unavailable. "
+            f"Recovery will trigger on next server restart."
+        )
+        db.commit()
+        return
 
     # Case 1: Scraper returned 0 coffees but some exist → skip mark-unavailable
     if not seen_external_ids and existing_available_count > 0:
