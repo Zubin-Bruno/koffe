@@ -7,6 +7,8 @@ import base64
 import json
 import re
 import urllib.parse
+import urllib.request
+import xml.etree.ElementTree as ET
 
 from loguru import logger
 from selectolax.parser import HTMLParser
@@ -26,6 +28,7 @@ from koffe.scrapers.utils import (
 
 BASE_URL = "https://flatnwhite.com"
 LISTING_URL = f"{BASE_URL}/cafe-de-especialidad-flatwhite-argentina/"
+SITEMAP_URL = f"{BASE_URL}/wp-sitemap-posts-product-1.xml"
 
 
 class FlatNWhiteScraper(BaseScraper):
@@ -48,7 +51,44 @@ class FlatNWhiteScraper(BaseScraper):
         logger.info(f"[flat-n-white] Total coffees found: {len(coffees)}")
         return coffees
 
+    def _fetch_sitemap_urls(self) -> list[str]:
+        """Fetch product URLs from the WordPress sitemap XML (no JavaScript needed).
+
+        WordPress automatically generates a sitemap at /wp-sitemap-posts-product-1.xml
+        that lists every WooCommerce product URL. This is a plain static XML file —
+        no browser, no JavaScript, no WP Rocket lazy-loading. Much more reliable on
+        slow servers like Render's Docker environment.
+
+        Returns an empty list if the request fails for any reason (network error,
+        unexpected format, etc.) so the caller can fall back to Playwright.
+        """
+        try:
+            req = urllib.request.Request(
+                SITEMAP_URL,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; KoffeScraper/1.0)"},
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                xml_bytes = resp.read()
+            root = ET.fromstring(xml_bytes)
+            # WordPress sitemap XML uses the namespace http://www.sitemaps.org/schemas/sitemap/0.9
+            ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+            urls = [loc.text.strip() for loc in root.findall(".//sm:loc", ns) if loc.text]
+            # Keep only product URLs (filter out any stray non-product entries)
+            product_urls = [u for u in urls if u.startswith(BASE_URL)]
+            logger.info(f"[flat-n-white] Sitemap returned {len(product_urls)} product URL(s)")
+            return product_urls
+        except Exception as e:
+            logger.warning(f"[flat-n-white] Sitemap fetch failed: {e}")
+            return []
+
     async def _get_product_links(self, browser) -> list[str]:
+        # --- Primary: WordPress sitemap XML (no JS, always reliable) ---
+        urls = self._fetch_sitemap_urls()
+        if urls:
+            return urls
+
+        # --- Fallback: Playwright listing page (JS-rendered, may fail on slow servers) ---
+        logger.warning("[flat-n-white] Sitemap returned 0 URLs — falling back to Playwright listing page")
         urls = await self._fetch_listing_page(browser)
 
         # Retry up to 2 more times if 0 links found — WooCommerce/XStore
@@ -208,6 +248,19 @@ class FlatNWhiteScraper(BaseScraper):
                     logger.warning(f"[flat-n-white] product_title STILL missing after Rocket bypass — skipping {url}")
                     await page.close()
                     return []
+
+            # --- Wait for price to render (Fix B) ---
+            # The product title is in static HTML and loads immediately, but the
+            # WooCommerce price (.woocommerce-Price-amount) is injected by JavaScript.
+            # On Render's slow Docker, if we grab page.content() right after the title
+            # appears, the price (and surrounding product content) may not be in the DOM
+            # yet. Waiting here gives WooCommerce JS time to finish rendering.
+            try:
+                await page.wait_for_selector(".woocommerce-Price-amount", timeout=10000)
+            except Exception:
+                # Price element might be inside variation JS (not in static DOM).
+                # That's fine — _parse_variations() reads data-product_variations JSON.
+                pass
 
             # --- Extract image URL from the LIVE DOM before closing the page ---
             # This is critical: after lazy-loading triggers, the browser replaces
