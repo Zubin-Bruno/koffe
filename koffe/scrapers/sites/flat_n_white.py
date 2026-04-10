@@ -167,6 +167,45 @@ class FlatNWhiteScraper(BaseScraper):
         page = await browser.new_page()
         try:
             await page.goto(url, wait_until="networkidle", timeout=60000)
+
+            # --- Trigger lazy-loading (same strategies as _fetch_listing_page) ---
+            # Rocket LazyLoadScripts defers all JS until a user interaction event.
+            # Without this, <img> tags still have data:image/svg+xml placeholders.
+            await page.evaluate("""() => {
+                ['mousedown', 'touchstart', 'keydown'].forEach(type => {
+                    window.dispatchEvent(new Event(type, { bubbles: true }));
+                });
+            }""")
+            await page.mouse.click(100, 200)
+            await page.evaluate("window.scrollBy(0, 300)")
+            await page.wait_for_timeout(2000)
+
+            # --- Extract image URL from the LIVE DOM before closing the page ---
+            # This is critical: after lazy-loading triggers, the browser replaces
+            # SVG placeholders with real image URLs. We must read them while the
+            # page is still open. Using page.evaluate() reads the actual current
+            # state of the DOM in the browser.
+            image_url = await page.evaluate("""() => {
+                const img = document.querySelector(
+                    '.woocommerce-product-gallery__image img, .wp-post-image'
+                );
+                if (!img) return null;
+                const candidates = [
+                    img.currentSrc,
+                    img.src,
+                    img.dataset.src,
+                    img.dataset.lazySrc,
+                    img.dataset.largeImage,
+                    img.closest('a') ? img.closest('a').href : null,
+                ];
+                for (const url of candidates) {
+                    if (url && !url.startsWith('data:') && url.startsWith('http')) {
+                        return url;
+                    }
+                }
+                return null;
+            }""")
+
             html = await page.content()
         finally:
             await page.close()
@@ -181,38 +220,38 @@ class FlatNWhiteScraper(BaseScraper):
         if not name:
             return []
 
-        # Image — XStore theme lazy-loads via a data:image/svg+xml placeholder.
-        # The real URL is embedded inside the SVG as a URL-encoded data-u attribute.
-        image_url = None
-        img_node = tree.css_first(
-            ".woocommerce-product-gallery__image img, .wp-post-image"
-        )
-        if img_node:
-            raw_src = img_node.attributes.get("src", "")
-            if raw_src and not raw_src.startswith("data:"):
-                image_url = raw_src
-            if not image_url and raw_src.startswith("data:image/svg+xml;base64,"):
-                # Decode the SVG and extract the real URL from its data-u attribute
-                try:
-                    svg_text = base64.b64decode(
-                        raw_src.split(",", 1)[1]
-                    ).decode("utf-8", errors="ignore")
-                    match = re.search(r'data-u="([^"]+)"', svg_text)
-                    if match:
-                        image_url = urllib.parse.unquote(match.group(1))
-                except Exception:
-                    pass
-            if not image_url:
-                image_url = (
-                    img_node.attributes.get("data-src")
-                    or img_node.attributes.get("data-lazy-src")
-                    or img_node.attributes.get("data-large_image")
-                )
-            # Last resort: WooCommerce stores full-size URL in the parent <a>
-            if not image_url:
-                parent = img_node.parent
-                if parent and parent.tag == "a":
-                    image_url = parent.attributes.get("href") or None
+        # Image — fallback: if live DOM extraction didn't find a URL, try
+        # offline HTML parsing (SVG base64 decode, data attributes, etc.)
+        if not image_url:
+            img_node = tree.css_first(
+                ".woocommerce-product-gallery__image img, .wp-post-image"
+            )
+            if img_node:
+                raw_src = img_node.attributes.get("src", "")
+                if raw_src and not raw_src.startswith("data:"):
+                    image_url = raw_src
+                if not image_url and raw_src.startswith("data:image/svg+xml;base64,"):
+                    # Decode the SVG and extract the real URL from its data-u attribute
+                    try:
+                        svg_text = base64.b64decode(
+                            raw_src.split(",", 1)[1]
+                        ).decode("utf-8", errors="ignore")
+                        match = re.search(r'data-u="([^"]+)"', svg_text)
+                        if match:
+                            image_url = urllib.parse.unquote(match.group(1))
+                    except Exception:
+                        pass
+                if not image_url:
+                    image_url = (
+                        img_node.attributes.get("data-src")
+                        or img_node.attributes.get("data-lazy-src")
+                        or img_node.attributes.get("data-large_image")
+                    )
+                # Last resort: WooCommerce stores full-size URL in the parent <a>
+                if not image_url:
+                    parent = img_node.parent
+                    if parent and parent.tag == "a":
+                        image_url = parent.attributes.get("href") or None
 
         # Short description
         desc_node = tree.css_first(

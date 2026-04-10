@@ -44,14 +44,23 @@ def _download_image(url: str, roaster_slug: str, external_id: str) -> str | None
     try:
         req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
         with urllib.request.urlopen(req, timeout=10) as resp:
-            content_type = resp.headers.get("Content-Type", "")
-            if "png" in content_type:
-                ext = ".png"
-            elif "webp" in content_type:
-                ext = ".webp"
-            filename = f"{roaster_slug}_{safe_id}{ext}"
-            dest = IMAGES_DIR / filename
-            dest.write_bytes(resp.read())
+            image_bytes = resp.read()
+
+        # Detect actual format from magic bytes — URL extensions and
+        # Content-Type headers sometimes lie (e.g. a .jpg URL serving PNG).
+        if image_bytes[:8].startswith(b"\x89PNG"):
+            ext = ".png"
+        elif image_bytes[:3] == b"\xff\xd8\xff":
+            ext = ".jpg"
+        elif len(image_bytes) >= 12 and image_bytes[:4] == b"RIFF" and image_bytes[8:12] == b"WEBP":
+            ext = ".webp"
+        elif image_bytes[:4] == b"GIF8":
+            ext = ".gif"
+        # else: keep the extension we derived from the URL above
+
+        filename = f"{roaster_slug}_{safe_id}{ext}"
+        dest = IMAGES_DIR / filename
+        dest.write_bytes(image_bytes)
         return f"/images/{filename}"
     except Exception as exc:
         logger.warning(f"Image download failed for {url}: {exc}")
