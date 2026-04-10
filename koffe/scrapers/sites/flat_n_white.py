@@ -178,7 +178,36 @@ class FlatNWhiteScraper(BaseScraper):
             }""")
             await page.mouse.click(100, 200)
             await page.evaluate("window.scrollBy(0, 300)")
-            await page.wait_for_timeout(2000)
+
+            # Wait for the product title to appear (proves content has loaded).
+            # On Render's slower Docker, a blind 2s wait is not enough.
+            title_appeared = True
+            try:
+                await page.wait_for_selector("h1.product_title", timeout=15000)
+            except Exception:
+                title_appeared = False
+                logger.warning(f"[flat-n-white] product_title not found on first attempt for {url}")
+
+            # Nuclear fallback: force-execute Rocket-deferred scripts (same as listing page)
+            if not title_appeared:
+                logger.info(f"[flat-n-white] Attempting Rocket bypass on product page {url}")
+                await page.evaluate("""() => {
+                    document.querySelectorAll('script[type="rocketlazyloadscript"]').forEach(old => {
+                        const s = document.createElement('script');
+                        [...old.attributes].forEach(a => {
+                            if (a.name === 'type') return;
+                            s.setAttribute(a.name === 'data-rocket-src' ? 'src' : a.name, a.value);
+                        });
+                        if (old.textContent) s.textContent = old.textContent;
+                        old.parentNode.replaceChild(s, old);
+                    });
+                }""")
+                try:
+                    await page.wait_for_selector("h1.product_title", timeout=10000)
+                except Exception:
+                    logger.warning(f"[flat-n-white] product_title STILL missing after Rocket bypass — skipping {url}")
+                    await page.close()
+                    return []
 
             # --- Extract image URL from the LIVE DOM before closing the page ---
             # This is critical: after lazy-loading triggers, the browser replaces
@@ -213,7 +242,7 @@ class FlatNWhiteScraper(BaseScraper):
         tree = HTMLParser(html)
 
         # Name
-        name_node = tree.css_first("h1.product_title") or tree.css_first("h1")
+        name_node = tree.css_first("h1.product_title")
         if not name_node:
             return []
         name = clean_text(name_node.text())

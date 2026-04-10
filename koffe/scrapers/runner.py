@@ -175,6 +175,52 @@ def _load_scraper(module_path: str) -> BaseScraper:
     raise ImportError(f"No BaseScraper subclass found in {module_path}")
 
 
+def _is_garbage(data: CoffeeData, roaster: Roaster) -> bool:
+    """Reject a CoffeeData entry that looks like a failed scrape.
+
+    Two heuristics:
+    1. The name matches the roaster's domain (e.g. "Flatnwhite.Com") — means
+       the scraper grabbed the site header instead of the product title.
+    2. ALL substantive fields are None/empty — no price, image, description,
+       origin, process, or roast level.  A real product always has at least one.
+    """
+    # Check if name looks like a domain (strip protocol/www, compare case-insensitive)
+    if data.name:
+        name_lower = data.name.lower().strip()
+        slug_domain = roaster.slug.replace("-", "")  # "flat-n-white" → "flatnwhite"
+        # Also check the roaster's URL domain if available
+        domain_variants = {slug_domain}
+        if roaster.website_url:
+            from urllib.parse import urlparse
+            parsed = urlparse(roaster.website_url)
+            domain = parsed.hostname or ""
+            domain_variants.add(domain.replace("www.", "").lower())
+            domain_variants.add(domain.replace("www.", "").split(".")[0].lower())
+        name_clean = re.sub(r"[.\-_\s]", "", name_lower)
+        for variant in domain_variants:
+            variant_clean = re.sub(r"[.\-_\s]", "", variant)
+            if variant_clean and name_clean == variant_clean:
+                logger.warning(
+                    f"[{roaster.slug}] Rejecting garbage entry '{data.name}' "
+                    f"(external_id={data.external_id}) — name matches domain"
+                )
+                return True
+
+    # Check if ALL substantive fields are empty
+    substantive_fields = [
+        data.price_cents, data.image_url, data.description,
+        data.origin_country, data.process, data.roast_level,
+    ]
+    if all(f is None for f in substantive_fields):
+        logger.warning(
+            f"[{roaster.slug}] Rejecting garbage entry '{data.name}' "
+            f"(external_id={data.external_id}) — all substantive fields are null"
+        )
+        return True
+
+    return False
+
+
 def _upsert_coffees(
     db: Session, roaster: Roaster, coffees_data: list[CoffeeData]
 ) -> None:
@@ -186,6 +232,9 @@ def _upsert_coffees(
     seen_external_ids: set[str] = set()
 
     for data in coffees_data:
+        if _is_garbage(data, roaster):
+            continue
+
         seen_external_ids.add(data.external_id)
 
         # Cache external images locally
@@ -201,29 +250,43 @@ def _upsert_coffees(
         )
 
         if existing:
-            # Update all fields
+            # Always update fields that are always present in a valid scrape
             existing.name = data.name
             existing.url = data.url
-            existing.price_cents = data.price_cents
             existing.currency = data.currency
-            existing.weight_grams = data.weight_grams
             existing.is_available = data.is_available
-            existing.image_url = data.image_url
-            existing.description = data.description
-            existing.origin_country = data.origin_country
-            existing.process = data.process
-            existing.roast_level = data.roast_level
+            existing.last_seen_at = now
+
+            # Nullable fields: only overwrite when the new value is not None.
+            # This prevents a partial scrape failure from erasing good data.
+            if data.price_cents is not None:
+                existing.price_cents = data.price_cents
+            if data.weight_grams is not None:
+                existing.weight_grams = data.weight_grams
+            if data.image_url is not None:
+                existing.image_url = data.image_url
+            if data.description is not None:
+                existing.description = data.description
+            if data.origin_country is not None:
+                existing.origin_country = data.origin_country
+            if data.process is not None:
+                existing.process = data.process
+            if data.roast_level is not None:
+                existing.roast_level = data.roast_level
             if data.acidity is not None:
                 existing.acidity = data.acidity
             if data.sweetness is not None:
                 existing.sweetness = data.sweetness
             if data.body is not None:
                 existing.body = data.body
-            existing.variety = data.variety
-            existing.altitude_masl = data.altitude_masl
-            existing.brew_methods = data.brew_methods
-            existing.attributes = data.attributes
-            existing.last_seen_at = now
+            if data.variety is not None:
+                existing.variety = data.variety
+            if data.altitude_masl is not None:
+                existing.altitude_masl = data.altitude_masl
+            if data.brew_methods is not None:
+                existing.brew_methods = data.brew_methods
+            if data.attributes is not None:
+                existing.attributes = data.attributes
         else:
             db.add(
                 Coffee(
