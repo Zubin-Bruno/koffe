@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>{% block title %}Koffe{% endblock %}</title>
+  <title>{% block title %}Buscá-Kafé{% endblock %}</title>
   <!-- Apply saved theme before render to avoid a flash of wrong colors -->
   <script>
     (function(){
@@ -11,10 +11,7 @@
       document.documentElement.setAttribute('data-theme', t);
     })();
   </script>
-  <!-- System font stack: SF Pro on Apple, Segoe UI on Windows -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,600;9..144,700&display=swap" rel="stylesheet">
+  <!-- System font stack: SF Pro on Apple, Segoe UI on Windows, Roboto on Android -->
   <script src="/static/htmx.min.js"></script>
   <link rel="stylesheet" href="/static/style.css" />
 </head>
