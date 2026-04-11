@@ -1,9 +1,11 @@
 """
 Scraper for Flat N' White — https://flatnwhite.com
 Argentine specialty coffee roaster. WooCommerce + XStore theme.
+
+The site uses ShortPixel for image lazy-loading (data-u attribute on <img> tags).
+Coffee attributes are rendered as <h2> label + <p> value pairs.
 """
 
-import base64
 import json
 import re
 import urllib.parse
@@ -30,6 +32,14 @@ BASE_URL = "https://flatnwhite.com"
 LISTING_URL = f"{BASE_URL}/cafe-de-especialidad-flatwhite-argentina/"
 SITEMAP_URL = f"{BASE_URL}/wp-sitemap-posts-product-1.xml"
 
+# Products that appear in the sitemap but aren't coffee — used by the
+# sitemap fallback to filter out machines, teas, accessories, etc.
+_NON_COFFEE_SLUGS = {
+    "maquina", "cafetera", "tetera", "mate", "yerba", "accesorio",
+    "taza", "molinillo", "kit", "filtro", "cuchara", "infusor",
+    "te-", "tea", "tisana", "herbal",
+}
+
 
 class FlatNWhiteScraper(BaseScraper):
     roaster_slug = "flat-n-white"
@@ -51,131 +61,35 @@ class FlatNWhiteScraper(BaseScraper):
         logger.info(f"[flat-n-white] Total coffees found: {len(coffees)}")
         return coffees
 
-    def _fetch_sitemap_urls(self) -> list[str]:
-        """Fetch product URLs from the WordPress sitemap XML (no JavaScript needed).
-
-        WordPress automatically generates a sitemap at /wp-sitemap-posts-product-1.xml
-        that lists every WooCommerce product URL. This is a plain static XML file —
-        no browser, no JavaScript, no WP Rocket lazy-loading. Much more reliable on
-        slow servers like Render's Docker environment.
-
-        Returns an empty list if the request fails for any reason (network error,
-        unexpected format, etc.) so the caller can fall back to Playwright.
-        """
-        try:
-            req = urllib.request.Request(
-                SITEMAP_URL,
-                headers={"User-Agent": "Mozilla/5.0 (compatible; KoffeScraper/1.0)"},
-            )
-            with urllib.request.urlopen(req, timeout=15) as resp:
-                xml_bytes = resp.read()
-            root = ET.fromstring(xml_bytes)
-            # WordPress sitemap XML uses the namespace http://www.sitemaps.org/schemas/sitemap/0.9
-            ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
-            urls = [loc.text.strip() for loc in root.findall(".//sm:loc", ns) if loc.text]
-            # Keep only product URLs (filter out any stray non-product entries)
-            product_urls = [u for u in urls if u.startswith(BASE_URL)]
-            logger.info(f"[flat-n-white] Sitemap returned {len(product_urls)} product URL(s)")
-            return product_urls
-        except Exception as e:
-            logger.warning(f"[flat-n-white] Sitemap fetch failed: {e}")
-            return []
+    # ------------------------------------------------------------------
+    # Product link discovery
+    # ------------------------------------------------------------------
 
     async def _get_product_links(self, browser) -> list[str]:
-        # --- Primary: WordPress sitemap XML (no JS, always reliable) ---
-        urls = self._fetch_sitemap_urls()
+        """Get coffee product URLs from the category page, falling back to sitemap."""
+        # Primary: load the coffee category page with Playwright
+        urls = await self._fetch_category_page(browser)
         if urls:
             return urls
 
-        # --- Fallback: Playwright listing page (JS-rendered, may fail on slow servers) ---
-        logger.warning("[flat-n-white] Sitemap returned 0 URLs — falling back to Playwright listing page")
-        urls = await self._fetch_listing_page(browser)
+        # Fallback: sitemap XML filtered by blocklist
+        logger.warning("[flat-n-white] Category page returned 0 URLs — falling back to sitemap")
+        return self._fetch_sitemap_urls()
 
-        # Retry up to 2 more times if 0 links found — WooCommerce/XStore
-        # sometimes returns a skeleton page on the first load (transient CDN
-        # or JS issue).  The third attempt waits longer to give the CDN time.
-        if not urls:
-            import asyncio
-            logger.warning("[flat-n-white] 0 product links on first attempt, retrying in 5s…")
-            await asyncio.sleep(5)
-            urls = await self._fetch_listing_page(browser)
-
-        if not urls:
-            import asyncio
-            logger.warning("[flat-n-white] 0 product links on second attempt, retrying in 10s…")
-            await asyncio.sleep(10)
-            urls = await self._fetch_listing_page(browser)
-
-        return urls
-
-    async def _fetch_listing_page(self, browser) -> list[str]:
-        """Load the listing page once and extract product links.
-
-        Flat & White uses "Rocket LazyLoadScripts" (WP Rocket v2.0.3) that
-        defers all JavaScript until a user interaction event.  Rocket listens
-        on **window** (not document) and **ignores the first mousemove**.  It
-        responds to: mousedown, touchstart, keydown, etc.
-
-        We use four complementary strategies, each more aggressive:
-        """
+    async def _fetch_category_page(self, browser) -> list[str]:
+        """Load the coffee category page and extract product links."""
         page = await browser.new_page()
         try:
             await page.goto(LISTING_URL, wait_until="networkidle", timeout=60000)
 
-            # Strategy 1: JavaScript dispatchEvent — fire events that Rocket
-            # actually responds to, on `window` (where Rocket listens).
-            # Rocket ignores the first mousemove, so we use mousedown,
-            # touchstart, and keydown instead.
-            await page.evaluate("""() => {
-                ['mousedown', 'touchstart', 'keydown'].forEach(type => {
-                    window.dispatchEvent(new Event(type, { bubbles: true }));
-                });
-            }""")
-
-            # Strategy 2: Playwright mouse.click — a click fires mousedown +
-            # mouseup + click, all of which Rocket listens for.  (mouse.move
-            # only fires mousemove, which Rocket ignores.)
-            await page.mouse.click(100, 200)
-
-            # Strategy 3: scroll — triggers Intersection Observers and any
-            # scroll-based lazy loaders.
-            await page.evaluate("window.scrollBy(0, 300)")
-
-            # Wait for product elements to appear after lazy scripts execute
-            products_appeared = True
+            # Wait for product elements to appear
             try:
                 await page.wait_for_selector(
-                    "li.product a, a.woocommerce-LoopProduct-link, .products .product a",
-                    timeout=20000,
+                    "li.product a, a.woocommerce-LoopProduct-link",
+                    timeout=15000,
                 )
             except Exception:
-                products_appeared = False
-                logger.warning("[flat-n-white] Products did not appear after triggering lazy load")
-
-            # Strategy 4 (nuclear): If products still haven't appeared,
-            # directly execute Rocket-deferred scripts by changing their type
-            # from "rocketlazyloadscript" back to real script elements.
-            if not products_appeared:
-                logger.info("[flat-n-white] Attempting direct Rocket script bypass…")
-                await page.evaluate("""() => {
-                    document.querySelectorAll('script[type="rocketlazyloadscript"]').forEach(old => {
-                        const s = document.createElement('script');
-                        [...old.attributes].forEach(a => {
-                            if (a.name === 'type') return;
-                            s.setAttribute(a.name === 'data-rocket-src' ? 'src' : a.name, a.value);
-                        });
-                        if (old.textContent) s.textContent = old.textContent;
-                        old.parentNode.replaceChild(s, old);
-                    });
-                }""")
-                # Wait again for products to render after forced script execution
-                try:
-                    await page.wait_for_selector(
-                        "li.product a, a.woocommerce-LoopProduct-link, .products .product a",
-                        timeout=10000,
-                    )
-                except Exception:
-                    logger.warning("[flat-n-white] Products still missing after Rocket bypass")
+                logger.warning("[flat-n-white] Product links did not appear on category page")
 
             html = await page.content()
         finally:
@@ -185,14 +99,7 @@ class FlatNWhiteScraper(BaseScraper):
         urls = []
         seen = set()
 
-        # WooCommerce standard: product links in listing use woocommerce-LoopProduct-link
-        # XStore theme may use different classes; try several selectors
-        selectors = [
-            "a.woocommerce-LoopProduct-link",
-            "li.product a[rel='bookmark']",
-            ".products .product a",
-        ]
-        for sel in selectors:
+        for sel in ["a.woocommerce-LoopProduct-link", "li.product a"]:
             for link in tree.css(sel):
                 href = link.attributes.get("href", "")
                 if href and href not in seen and href.startswith(BASE_URL):
@@ -203,70 +110,55 @@ class FlatNWhiteScraper(BaseScraper):
 
         return urls
 
+    def _fetch_sitemap_urls(self) -> list[str]:
+        """Fetch product URLs from WordPress sitemap XML, filtering non-coffee items."""
+        try:
+            req = urllib.request.Request(
+                SITEMAP_URL,
+                headers={"User-Agent": "Mozilla/5.0 (compatible; KoffeScraper/1.0)"},
+            )
+            with urllib.request.urlopen(req, timeout=15) as resp:
+                xml_bytes = resp.read()
+            root = ET.fromstring(xml_bytes)
+            ns = {"sm": "http://www.sitemaps.org/schemas/sitemap/0.9"}
+            all_urls = [loc.text.strip() for loc in root.findall(".//sm:loc", ns) if loc.text]
+
+            # Filter out non-coffee products using the blocklist
+            urls = []
+            for u in all_urls:
+                slug = u.rstrip("/").split("/")[-1].lower()
+                if not any(kw in slug for kw in _NON_COFFEE_SLUGS):
+                    urls.append(u)
+
+            logger.info(f"[flat-n-white] Sitemap returned {len(urls)} coffee URL(s) (filtered from {len(all_urls)} total)")
+            return urls
+        except Exception as e:
+            logger.warning(f"[flat-n-white] Sitemap fetch failed: {e}")
+            return []
+
+    # ------------------------------------------------------------------
+    # Product page scraping
+    # ------------------------------------------------------------------
+
     async def _scrape_product(self, browser, url: str) -> list[CoffeeData]:
         page = await browser.new_page()
         try:
             await page.goto(url, wait_until="networkidle", timeout=60000)
 
-            # --- Trigger lazy-loading (same strategies as _fetch_listing_page) ---
-            # Rocket LazyLoadScripts defers all JS until a user interaction event.
-            # Without this, <img> tags still have data:image/svg+xml placeholders.
-            await page.evaluate("""() => {
-                ['mousedown', 'touchstart', 'keydown'].forEach(type => {
-                    window.dispatchEvent(new Event(type, { bubbles: true }));
-                });
-            }""")
-            await page.mouse.click(100, 200)
-            await page.evaluate("window.scrollBy(0, 300)")
-
-            # Wait for the product title to appear (proves content has loaded).
-            # On Render's slower Docker, a blind 2s wait is not enough.
-            title_appeared = True
+            # Wait for title — proves the page content loaded
             try:
-                await page.wait_for_selector("h1.product_title", timeout=15000)
+                await page.wait_for_selector("h1.product_title, h1", timeout=15000)
             except Exception:
-                title_appeared = False
-                logger.warning(f"[flat-n-white] product_title not found on first attempt for {url}")
+                logger.warning(f"[flat-n-white] Title not found for {url} — skipping")
+                return []
 
-            # Nuclear fallback: force-execute Rocket-deferred scripts (same as listing page)
-            if not title_appeared:
-                logger.info(f"[flat-n-white] Attempting Rocket bypass on product page {url}")
-                await page.evaluate("""() => {
-                    document.querySelectorAll('script[type="rocketlazyloadscript"]').forEach(old => {
-                        const s = document.createElement('script');
-                        [...old.attributes].forEach(a => {
-                            if (a.name === 'type') return;
-                            s.setAttribute(a.name === 'data-rocket-src' ? 'src' : a.name, a.value);
-                        });
-                        if (old.textContent) s.textContent = old.textContent;
-                        old.parentNode.replaceChild(s, old);
-                    });
-                }""")
-                try:
-                    await page.wait_for_selector("h1.product_title", timeout=10000)
-                except Exception:
-                    logger.warning(f"[flat-n-white] product_title STILL missing after Rocket bypass — skipping {url}")
-                    await page.close()
-                    return []
-
-            # --- Wait for price to render (Fix B) ---
-            # The product title is in static HTML and loads immediately, but the
-            # WooCommerce price (.woocommerce-Price-amount) is injected by JavaScript.
-            # On Render's slow Docker, if we grab page.content() right after the title
-            # appears, the price (and surrounding product content) may not be in the DOM
-            # yet. Waiting here gives WooCommerce JS time to finish rendering.
+            # Wait for price to render (WooCommerce JS injects it)
             try:
                 await page.wait_for_selector(".woocommerce-Price-amount", timeout=10000)
             except Exception:
-                # Price element might be inside variation JS (not in static DOM).
-                # That's fine — _parse_variations() reads data-product_variations JSON.
-                pass
+                pass  # Price might come from variation JSON instead
 
-            # --- Extract image URL from the LIVE DOM before closing the page ---
-            # This is critical: after lazy-loading triggers, the browser replaces
-            # SVG placeholders with real image URLs. We must read them while the
-            # page is still open. Using page.evaluate() reads the actual current
-            # state of the DOM in the browser.
+            # Extract image URL from live DOM (after ShortPixel resolves lazy images)
             image_url = await page.evaluate("""() => {
                 const img = document.querySelector(
                     '.woocommerce-product-gallery__image img, .wp-post-image'
@@ -275,10 +167,8 @@ class FlatNWhiteScraper(BaseScraper):
                 const candidates = [
                     img.currentSrc,
                     img.src,
+                    img.dataset.u,
                     img.dataset.src,
-                    img.dataset.lazySrc,
-                    img.dataset.largeImage,
-                    img.closest('a') ? img.closest('a').href : null,
                 ];
                 for (const url of candidates) {
                     if (url && !url.startsWith('data:') && url.startsWith('http')) {
@@ -294,46 +184,17 @@ class FlatNWhiteScraper(BaseScraper):
 
         tree = HTMLParser(html)
 
-        # Name
-        name_node = tree.css_first("h1.product_title")
+        # Name — try .product_title first, then plain h1
+        name_node = tree.css_first("h1.product_title") or tree.css_first("h1")
         if not name_node:
             return []
         name = clean_text(name_node.text())
         if not name:
             return []
 
-        # Image — fallback: if live DOM extraction didn't find a URL, try
-        # offline HTML parsing (SVG base64 decode, data attributes, etc.)
+        # Image fallback — parse offline HTML if live DOM didn't find one
         if not image_url:
-            img_node = tree.css_first(
-                ".woocommerce-product-gallery__image img, .wp-post-image"
-            )
-            if img_node:
-                raw_src = img_node.attributes.get("src", "")
-                if raw_src and not raw_src.startswith("data:"):
-                    image_url = raw_src
-                if not image_url and raw_src.startswith("data:image/svg+xml;base64,"):
-                    # Decode the SVG and extract the real URL from its data-u attribute
-                    try:
-                        svg_text = base64.b64decode(
-                            raw_src.split(",", 1)[1]
-                        ).decode("utf-8", errors="ignore")
-                        match = re.search(r'data-u="([^"]+)"', svg_text)
-                        if match:
-                            image_url = urllib.parse.unquote(match.group(1))
-                    except Exception:
-                        pass
-                if not image_url:
-                    image_url = (
-                        img_node.attributes.get("data-src")
-                        or img_node.attributes.get("data-lazy-src")
-                        or img_node.attributes.get("data-large_image")
-                    )
-                # Last resort: WooCommerce stores full-size URL in the parent <a>
-                if not image_url:
-                    parent = img_node.parent
-                    if parent and parent.tag == "a":
-                        image_url = parent.attributes.get("href") or None
+            image_url = self._extract_image_from_html(tree)
 
         # Short description
         desc_node = tree.css_first(
@@ -341,37 +202,62 @@ class FlatNWhiteScraper(BaseScraper):
         )
         description = clean_text(desc_node.text()) if desc_node else None
 
-        # Availability fallback from JSON-LD
+        # Availability from JSON-LD
         is_available_default = self._parse_availability(tree)
 
-        # Metadata from page body text
+        # --- Extract attributes from h2/p pairs (new site structure) ---
+        h2p_attrs = self._extract_attributes_from_h2p(tree)
+
+        # Metadata from page body text (used as fallback)
         page_text = tree.body.text() if tree.body else ""
-        origin_country = normalize_origin(name, page_text)
-        process = None
-        _process_raw = self._extract_field(
-            page_text,
-            ["beneficio", "beneficiado", "proceso", "process", "fermentacion", "fermentación"]
-            # "método" removed — too broad, matches "método de pago" / "método de envío" on WooCommerce pages
-        )
-        if _process_raw:
-            process = normalize_process(_process_raw)
-        if process is None:
-            process = self._extract_process_from_tags(tree)
-        if process is None:
-            process = normalize_process(self._scan_process_keywords(page_text))
-        variety = self._extract_field(page_text, ["varietal", "varietales", "variedad"])
-        roast_level = normalize_roast(
+
+        # Origin
+        origin_country = h2p_attrs.get("origin") or normalize_origin(name, page_text)
+
+        # Roast level
+        roast_level = h2p_attrs.get("roast") or normalize_roast(
             self._extract_field(page_text, ["tueste", "tostado", "roast"])
         )
+
+        # Process: h2p → extract_field → tags → keyword scan
+        process = h2p_attrs.get("process")
+        if not process:
+            _process_raw = self._extract_field(
+                page_text,
+                ["beneficio", "beneficiado", "proceso", "process", "fermentacion", "fermentación"],
+            )
+            if _process_raw:
+                process = normalize_process(_process_raw)
+        if not process:
+            process = self._extract_process_from_tags(tree)
+        if not process:
+            process = normalize_process(self._scan_process_keywords(page_text))
+
+        # Variety
+        variety = h2p_attrs.get("variety") or self._extract_field(
+            page_text, ["varietal", "varietales", "variedad"]
+        )
+
+        # Altitude
         altitude_masl = self._extract_altitude(page_text)
-        tasting_notes = normalize_tasting_notes(self._extract_tasting_notes(tree, page_text))
-        # Brew methods are mentioned in prose inside the full description tab,
-        # not in a labeled field. Pass the full tab text to normalize_brew_methods().
+
+        # Tasting notes: h2p first, then DOM/regex fallback
+        tasting_notes = h2p_attrs.get("tasting_notes")
+        if not tasting_notes:
+            tasting_notes = normalize_tasting_notes(self._extract_tasting_notes(tree, page_text))
+
+        # Brew methods
         desc_tab = tree.css_first("#tab-description, .woocommerce-Tabs-panel--description")
         brew_methods = normalize_brew_methods(desc_tab.text() if desc_tab else None)
+
+        # Build attributes dict
         attributes: dict = {}
         if tasting_notes:
             attributes["tasting_notes"] = tasting_notes
+        if h2p_attrs.get("score"):
+            attributes["score"] = h2p_attrs["score"]
+        if h2p_attrs.get("cup_profile"):
+            attributes["cup_profile"] = h2p_attrs["cup_profile"]
 
         # One entry per product — collapse all grind/size variants
         slug = url.rstrip("/").split("/")[-1]
@@ -405,6 +291,113 @@ class FlatNWhiteScraper(BaseScraper):
                 attributes=attributes,
             )
         ]
+
+    # ------------------------------------------------------------------
+    # Attribute extraction from <h2> label + <p> value pairs
+    # ------------------------------------------------------------------
+
+    def _extract_attributes_from_h2p(self, tree: HTMLParser) -> dict:
+        """Parse <h2>Label</h2><p>Value</p> pairs used by the current site layout.
+
+        Returns a dict with keys: origin, roast, process, variety, score,
+        cup_profile, tasting_notes. Missing keys are omitted.
+        """
+        result = {}
+
+        # Map h2 label text (lowercased) to handler
+        label_map = {
+            "puntaje": "score",
+            "tueste": "roast",
+            "origen": "origin",
+            "perfil en taza": "cup_profile",
+            "notas de cata": "tasting_notes",
+            "proceso": "process",
+            "beneficio": "process",
+            "varietal": "variety",
+            "varietales": "variety",
+            "variedad": "variety",
+        }
+
+        for h2 in tree.css("h2"):
+            label_text = clean_text(h2.text())
+            if not label_text:
+                continue
+            label_lower = label_text.lower().strip()
+
+            field_key = label_map.get(label_lower)
+            if not field_key:
+                continue
+
+            # The value is in the next <p> sibling
+            sibling = h2.next
+            # Skip whitespace text nodes
+            while sibling and sibling.tag in (None, "-text"):
+                sibling = sibling.next
+            if not sibling or sibling.tag != "p":
+                continue
+
+            value = clean_text(sibling.text())
+            if not value:
+                continue
+
+            if field_key == "score":
+                result["score"] = value
+            elif field_key == "roast":
+                result["roast"] = normalize_roast(value)
+            elif field_key == "origin":
+                result["origin"] = normalize_origin(None, value) or value
+            elif field_key == "cup_profile":
+                result["cup_profile"] = value
+            elif field_key == "tasting_notes":
+                raw_notes = [n.strip() for n in re.split(r"[,/&+]|\s+y\s+", value) if n.strip()]
+                result["tasting_notes"] = normalize_tasting_notes(raw_notes)
+            elif field_key == "process":
+                result["process"] = normalize_process(value)
+            elif field_key == "variety":
+                result["variety"] = value
+
+        return result
+
+    # ------------------------------------------------------------------
+    # Image extraction from offline HTML
+    # ------------------------------------------------------------------
+
+    def _extract_image_from_html(self, tree: HTMLParser) -> str | None:
+        """Extract image URL from parsed HTML (fallback when live DOM fails)."""
+        img_node = tree.css_first(
+            ".woocommerce-product-gallery__image img, .wp-post-image"
+        )
+        if not img_node:
+            return None
+
+        # ShortPixel stores real URL in data-u
+        data_u = img_node.attributes.get("data-u")
+        if data_u and data_u.startswith("http"):
+            return data_u
+
+        # Regular src (if not a placeholder)
+        src = img_node.attributes.get("src", "")
+        if src and not src.startswith("data:") and src.startswith("http"):
+            return src
+
+        # Other lazy-load attributes
+        for attr in ("data-src", "data-lazy-src", "data-large_image"):
+            val = img_node.attributes.get(attr)
+            if val and val.startswith("http"):
+                return val
+
+        # Last resort: WooCommerce stores full-size URL in parent <a>
+        parent = img_node.parent
+        if parent and parent.tag == "a":
+            href = parent.attributes.get("href")
+            if href and href.startswith("http"):
+                return href
+
+        return None
+
+    # ------------------------------------------------------------------
+    # Helpers (kept from previous version — still work the same)
+    # ------------------------------------------------------------------
 
     def _parse_availability(self, tree: HTMLParser) -> bool:
         """Check JSON-LD for InStock status; default True."""
@@ -488,7 +481,6 @@ class FlatNWhiteScraper(BaseScraper):
 
         return variations
 
-
     def _extract_field(self, text: str, labels: list[str]) -> str | None:
         for label in labels:
             match = re.search(
@@ -503,10 +495,7 @@ class FlatNWhiteScraper(BaseScraper):
         return None
 
     def _extract_process_from_tags(self, tree: HTMLParser) -> str | None:
-        """
-        WooCommerce renders product tags as <a rel="tag"> links (the "Etiquetas" section).
-        Run normalize_process() on each tag to find a process keyword.
-        """
+        """Check WooCommerce product tags (<a rel="tag">) for process keywords."""
         for tag_node in tree.css("a[rel='tag']"):
             result = normalize_process(tag_node.text())
             if result:
@@ -514,11 +503,7 @@ class FlatNWhiteScraper(BaseScraper):
         return None
 
     def _scan_process_keywords(self, text: str) -> str | None:
-        """
-        Fallback: scan page text for standalone process keywords when no labeled
-        field was found. Returns the raw keyword so normalize_process() can map it.
-        Order matters — most specific patterns first.
-        """
+        """Fallback: scan page text for standalone process keywords."""
         candidates = [
             (r"\banaer[oó]bic[oa]?\b", "anaerobico"),
             (r"\bdoble\s+fermentaci[oó]n\b", "anaerobico"),
@@ -549,9 +534,8 @@ class FlatNWhiteScraper(BaseScraper):
         return None
 
     def _extract_tasting_notes(self, tree: HTMLParser, text: str) -> list[str] | None:
-        # DOM-first: find an elementor-shortcode div whose parent/grandparent
-        # contains "notas de cata" — this is the dedicated cup-notes element on
-        # Flat N' White product pages.
+        """DOM + regex fallback for tasting notes (used when h2/p parsing finds nothing)."""
+        # DOM-first: find an elementor-shortcode div near "notas de cata"
         for node in tree.css("div.elementor-shortcode"):
             for ancestor in (node.parent, node.parent.parent if node.parent else None):
                 if ancestor is None:
@@ -563,7 +547,7 @@ class FlatNWhiteScraper(BaseScraper):
                         notes = [n.strip() for n in re.split(r"[,/&+]|\s+y\s+", raw) if n.strip()]
                         return notes[:6] if notes else None
 
-        # Regex fallback — "perfil" removed to avoid matching "perfil en taza"
+        # Regex fallback
         match = re.search(
             r"(?:notas?\s+de\s+cata|notas?|notes?)[:\s]+(.+?)(?:tostado|cosecha|recolecci[oó]n|secado|presentaci[oó]n|beneficio|proceso|varietal|varietales|variedad|altura|finca|origen|regi[oó]n|tueste|acidez|dulzura|cuerpo|puntaje|\n|\r|$)",
             text,
