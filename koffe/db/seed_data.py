@@ -38,13 +38,6 @@ SAMPLE_ROASTERS = [
         "scraper_module": "koffe.scrapers.sites.fuego_tostadores",
     },
     {
-        "name": "Flat N' White",
-        "slug": "flat-n-white",
-        "website_url": "https://flatnwhite.com",
-        "country": "Argentina",
-        "scraper_module": "koffe.scrapers.sites.flat_n_white",
-    },
-    {
         "name": "Mendel Tostadores",
         "slug": "mendel-tostadores",
         "website_url": "https://www.whatsapp.com/catalog/5491137628574/?app_absent=0&utm_source=ig",
