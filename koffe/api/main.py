@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from loguru import logger
 
-from koffe.api.routes import chat, coffees, feedback, roasters
+from koffe.api.routes import admin, chat, coffees, feedback, roasters
 from koffe.db.database import create_tables
 from koffe.db.seed_data import apply_curated_intensity, copy_bundled_images, seed_missing_roasters
 
@@ -37,8 +37,9 @@ async def lifespan(app: FastAPI):
     from koffe.scrapers.runner import run_all_scrapers
 
     scheduler.add_job(run_all_scrapers, "cron", hour=SCHEDULE_HOUR, minute=0)
+    scheduler.add_job(run_all_scrapers, "cron", hour=15, minute=0)
     scheduler.start()
-    logger.info(f"Scheduler started — scraping daily at {SCHEDULE_HOUR:02d}:00")
+    logger.info(f"Scheduler started — scraping daily at {SCHEDULE_HOUR:02d}:00 and 15:00")
 
     # If we just seeded a fresh DB, trigger an immediate scrape so coffees
     # appear within minutes instead of waiting until 3 AM.
@@ -100,6 +101,7 @@ def health():
     return {"status": "ok"}
 
 # Routers
+app.include_router(admin.router)
 app.include_router(coffees.router)
 app.include_router(roasters.router)
 app.include_router(chat.router)
