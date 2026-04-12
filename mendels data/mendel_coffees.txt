@@ -1,0 +1,26 @@
+
+acidez 4
+duzlor 4
+cuerpo 4
+notas: frutos rojos, floral
+proceso lavado
+metodo espresso y filtro
+variedad: -
+---
+bolivia typica regional
+acidez 3
+dulzor 4
+cuerpo 4
+notas: chocolatoso, frutos secos y desecados
+proceso lavado
+metodo: espresso
+variedad: typica
+---
+honduras
+acidez 4
+dulzor 4
+cuerpo 4
+notas: naranja, panela, datiles
+proceso lavado
+metodo espresso
+variedad: -

@@ -13,7 +13,26 @@
       "Bash(ls:*)",
       "WebFetch(domain:fuegotostadores.com)",
       "Bash(git add:*)",
-      "Bash(git push:*)"
+      "Bash(git push:*)",
+      "Bash(grep -r \"wait_until\\\\|networkidle\\\\|domcontentloaded\\\\|load\\\\|commit\" /c/Users/Bruno.DESKTOP-HBBD5DE/Desktop/cafecito/koffe/scrapers/sites/*.py)",
+      "Bash(curl -s -H \"Authorization: Bearer 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\" \"https://openrouter.ai/api/v1/models\")",
+      "Bash(git commit:*)",
+      "Bash(find /c/Users/Bruno.DESKTOP-HBBD5DE/Desktop/cafecito -type f \\\\\\(-name *.html -o -name *.css -o -name *.js -o -name *.scss \\\\\\))",
+      "Bash(curl -s \"http://localhost:8000/api/admin/scrape?token=test\")"
+    ]
+  },
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "jq -r '[.message, .user_message, .text, .prompt, .content] | map(select(. != null)) | join(\" \") | ascii_downcase' 2>/dev/null | grep -q 'frontend\\|ui\\|component\\|design\\|page\\|interface\\|style\\|aesthetic\\|build.*page\\|create' && echo '{\"hookSpecificOutput\":{\"hookEventName\":\"UserPromptSubmit\",\"additionalContext\":\"Frontend work detected: Apply the frontend-design skill from SKILL.md. Remember: bold aesthetic direction, distinctive typography (avoid Inter/Roboto), creative animations, spatial composition (asymmetry, overlap, negative space), visual details (gradients, textures, patterns), and avoid generic AI aesthetics.\"}}' || true",
+            "timeout": 5
+          }
+        ]
+      }
     ]
   }
 }

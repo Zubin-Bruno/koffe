@@ -15,7 +15,7 @@ python scripts/scrape_now.py
 python scripts/seed_db.py
 ```
 
-All commands must be run from the project root (`koffe/`).
+All commands must be run from the **project root** (the `cafecito/` folder on the Desktop, where `pyproject.toml` lives). The `koffe/` directory is the Python package inside it — not the root.
 
 ## Installing / setup
 
@@ -55,11 +55,51 @@ FastAPI → reads koffe.db → serves Jinja2+HTMX HTML + JSON API
 | `normalize_process(raw)` | → "Natural", "Washed", "Honey", "Anaerobic" |
 | `normalize_roast(raw)` | → "Light", "Medium", "Medium-Dark", "Dark" |
 
+## Vision AI (`koffe/scrapers/vision.py`)
+
+Some roasters embed intensity data (acidity, body, sweetness) in product **images** as bar charts instead of HTML text. The `vision.py` module handles this by sending images to an AI vision model (Gemini 2.0 Flash via OpenRouter) and parsing the response.
+
+Two functions are available:
+- `extract_intensities_from_image(image_url)` — for Puerto Blest; reads a 1–10 scale chart and converts to 1–5.
+- `extract_fuego_intensities(image_url)` — for Fuego Tostadores; reads a 1–5 scale chart directly.
+
+Both return `None` values for all fields if `OPENROUTER_API_KEY` is not set or the call fails (graceful fallback).
+
+## Chat AI (`koffe/api/routes/chat.py`)
+
+`POST /api/chat` — an AI barista assistant. The user describes what they want (in Argentine Spanish or English) and the LLM searches the catalog using tool calling.
+
+**How it works:**
+1. Receives the full conversation history from the frontend.
+2. Sends it to Gemini 2.0 Flash (via OpenRouter) with a `search_coffees` tool definition.
+3. The LLM calls `search_coffees` with filter parameters → we execute the DB query.
+4. A second LLM call turns the results into a friendly text response.
+5. Everything streams back to the browser via SSE (Server-Sent Events).
+
+Uses `OPENROUTER_API_KEY` and `CHAT_MODEL` (env var, defaults to `google/gemini-2.0-flash-001`).
+
+## Feedback (`koffe/api/routes/feedback.py`)
+
+`POST /feedback` — saves user suggestions (roaster requests, general feedback) to a `Feedback` table in the DB. Returns an HTML snippet for HTMX to swap in as a thank-you message.
+
+## Environment variables
+
+| Variable | Required | Purpose |
+|---|---|---|
+| `OPENROUTER_API_KEY` | For AI features | Vision extraction + chat assistant |
+| `CHAT_MODEL` | Optional | Override the default chat LLM (default: `google/gemini-2.0-flash-001`) |
+
 ## DB
 
 SQLite file at `data/koffe.db` (gitignored). Tables are created automatically on startup via `create_tables()` — no migration needed for a fresh install. For schema changes on an existing DB, use Alembic (`alembic/` is set up but migrations must be authored manually).
 
 Inspect the DB visually with [DB Browser for SQLite](https://sqlitebrowser.org/).
+
+## Deployment
+
+The site is hosted on **Render.com** and auto-deploys on every push to `master`.
+
+**Production URL:** https://www.xn--busca-kaf-j4a.com.ar/ (buscakafé.com.ar)
 
 ## GitHub
 
@@ -69,7 +109,7 @@ The `gh` CLI is not in the default shell PATH. Always invoke it with the full pa
 /c/Program\ Files/GitHub\ CLI/gh
 ```
 
-**After every set of changes, commit and push to GitHub automatically.** No need to ask — just commit with a clear message and push to `origin master`.
+**Do NOT auto-commit or auto-push.** Always wait for the user to test changes and give explicit approval before committing. When asked to commit, push to `origin master` (never `cafeito`).
 
 ## Adding a new roaster
 
