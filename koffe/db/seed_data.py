@@ -11,7 +11,7 @@ import shutil
 from loguru import logger
 
 from koffe.db.database import SessionLocal
-from koffe.db.models import Coffee, Roaster
+from koffe.db.models import Coffee, Roaster, ScrapeRun
 
 IMAGE_EXTENSIONS = {".jpeg", ".jpg", ".png", ".webp"}
 
@@ -185,5 +185,35 @@ def apply_curated_intensity() -> int:
             logger.info("No coffees needed intensity patching at startup")
 
         return total_updated
+    finally:
+        db.close()
+
+
+def remove_deprecated_roaster(slug: str) -> None:
+    """Delete a roaster and all its related rows from the DB.
+
+    Used to clean up roasters that were removed from the codebase but still
+    exist in a persistent database (e.g. Render.com's disk).  Safe to call
+    every startup — if the roaster is already gone it does nothing.
+
+    Deletion order matters: coffees and scrape_runs both hold a foreign-key
+    reference to roasters.id, so they must be deleted before the roaster row
+    itself, otherwise SQLite will raise a constraint error.
+    """
+    db = SessionLocal()
+    try:
+        roaster = db.query(Roaster).filter(Roaster.slug == slug).first()
+        if roaster is None:
+            logger.info(f"Roaster '{slug}' not in DB — nothing to remove")
+            return
+
+        coffees_deleted = db.query(Coffee).filter(Coffee.roaster_id == roaster.id).delete()
+        runs_deleted = db.query(ScrapeRun).filter(ScrapeRun.roaster_id == roaster.id).delete()
+        db.delete(roaster)
+        db.commit()
+        logger.info(
+            f"Removed deprecated roaster '{slug}' "
+            f"({coffees_deleted} coffee(s), {runs_deleted} scrape run(s) deleted)"
+        )
     finally:
         db.close()
