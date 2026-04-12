@@ -9,7 +9,7 @@ from loguru import logger
 
 from koffe.api.routes import chat, coffees, feedback, roasters
 from koffe.db.database import create_tables
-from koffe.db.seed_data import apply_curated_intensity, copy_bundled_images, remove_deprecated_roaster, seed_roasters_if_empty
+from koffe.db.seed_data import apply_curated_intensity, copy_bundled_images, seed_missing_roasters
 
 SCHEDULE_HOUR = int(os.getenv("SCRAPE_SCHEDULE_HOUR", "3"))
 
@@ -22,12 +22,9 @@ async def lifespan(app: FastAPI):
     create_tables()
     logger.info("Database tables ready")
 
-    # One-time cleanup: remove Flat N' White which was dropped from the codebase
-    # but may still exist in a persistent DB (e.g. Render.com disk).
-    remove_deprecated_roaster("flat-n-white")
-
-    # Auto-seed roasters on first deploy (empty DB)
-    freshly_seeded = seed_roasters_if_empty()
+    # Seed any roasters that are missing from the DB (handles both fresh DBs
+    # and cases where a new roaster was added to SAMPLE_ROASTERS).
+    freshly_seeded = seed_missing_roasters()
 
     # Copy bundled images (e.g. Mendel) to data/images/ if missing
     copy_bundled_images()

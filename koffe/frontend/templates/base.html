@@ -238,108 +238,183 @@
   })();
   </script>
   <script>
-  // ── Comparison overlay ───────────────────────────────────────
+  // ── Compare feature (localStorage-based) ─────────────────────
   (function () {
     'use strict';
-    var compareOverlay = null;
-    var compareBackdrop = null;
+    var MAX_COMPARE = 5;
+    var compareOverlayEl = null;
+    var compareBackdropEl = null;
 
-    function isMobile() { return window.innerWidth <= 600; }
+    // ── State helpers ──
+    function getCompareList() {
+      try { return JSON.parse(localStorage.getItem('compareList') || '[]'); }
+      catch (e) { return []; }
+    }
+    function saveCompareList(list) {
+      localStorage.setItem('compareList', JSON.stringify(list));
+    }
 
-    function openCompare(prefillCoffeeId) {
-      if (compareOverlay) return;
+    // ── Toggle a coffee in/out of the list ──
+    function toggleCompare(id, imageUrl, name) {
+      var list = getCompareList();
+      var idx = list.findIndex(function (item) { return item.id === id; });
+      if (idx !== -1) {
+        list.splice(idx, 1);
+      } else {
+        if (list.length >= MAX_COMPARE) return;  // silently ignore
+        list.push({ id: id, image_url: imageUrl, name: name });
+      }
+      saveCompareList(list);
+      syncCompareButtons();
+      updateCompareBar();
+    }
 
-      // Close any open expanded panel first
+    // ── Remove one coffee ──
+    function removeFromCompare(id) {
+      var list = getCompareList().filter(function (item) { return item.id !== id; });
+      saveCompareList(list);
+      syncCompareButtons();
+      updateCompareBar();
+      // If overlay is open, refresh the table
+      if (compareOverlayEl) {
+        if (list.length === 0) {
+          closeCompareTable();
+        } else {
+          loadCompareTableContent();
+        }
+      }
+    }
+
+    // ── Clear all ──
+    function clearCompare() {
+      saveCompareList([]);
+      syncCompareButtons();
+      updateCompareBar();
+      closeCompareTable();
+    }
+
+    // ── Sync "+" button states across all cards in the DOM ──
+    function syncCompareButtons() {
+      var list = getCompareList();
+      var ids = list.map(function (item) { return item.id; });
+      document.querySelectorAll('.compare-add-btn').forEach(function (btn) {
+        var coffeeId = parseInt(btn.getAttribute('data-coffee-id'), 10);
+        if (ids.indexOf(coffeeId) !== -1) {
+          btn.classList.add('is-selected');
+          btn.querySelector('.compare-add-icon').textContent = '\u2713';
+        } else {
+          btn.classList.remove('is-selected');
+          btn.querySelector('.compare-add-icon').textContent = '+';
+        }
+      });
+      // Also update expanded panel compare buttons
+      document.querySelectorAll('.exp-compare-label').forEach(function (label) {
+        var coffeeId = parseInt(label.getAttribute('data-coffee-id'), 10);
+        if (ids.indexOf(coffeeId) !== -1) {
+          label.textContent = '\u2713 Agregado';
+        } else {
+          label.textContent = '+ Comparar';
+        }
+      });
+    }
+
+    // ── Update the floating bar ──
+    function updateCompareBar() {
+      var bar = document.getElementById('compare-bar');
+      if (!bar) return;
+      var list = getCompareList();
+      if (list.length === 0) {
+        bar.style.display = 'none';
+        return;
+      }
+      bar.style.display = 'flex';
+      var itemsContainer = document.getElementById('compare-bar-items');
+      itemsContainer.innerHTML = '';
+      list.forEach(function (item) {
+        var thumb = document.createElement('img');
+        thumb.className = 'compare-bar-thumb';
+        thumb.src = item.image_url;
+        thumb.alt = item.name;
+        thumb.title = item.name;
+        thumb.onerror = function () { this.src = '/static/images/coffee-placeholder.svg'; };
+        itemsContainer.appendChild(thumb);
+      });
+      document.getElementById('compare-bar-count').textContent = list.length;
+    }
+
+    // ── Open the compare table overlay ──
+    function openCompareTable() {
+      var list = getCompareList();
+      if (list.length === 0) return;
+      if (compareOverlayEl) return;
+
+      // Close any expanded card panel first
       var existingExpanded = document.querySelector('.exp-panel-overlay.is-expanded');
       if (existingExpanded) {
         var closeBtn = existingExpanded.querySelector('.exp-close');
         if (closeBtn) closeBtn.click();
       }
 
-      // Backdrop (reuse same class as card expand)
+      // Backdrop
       var bd = document.createElement('div');
       bd.className = 'card-backdrop';
       document.body.appendChild(bd);
       requestAnimationFrame(function () { bd.classList.add('is-visible'); });
-      bd.addEventListener('click', closeCompare);
-      compareBackdrop = bd;
+      bd.addEventListener('click', closeCompareTable);
+      compareBackdropEl = bd;
 
-      // Build overlay structure
+      // Overlay
       var overlay = document.createElement('div');
-      overlay.className = 'compare-overlay';
+      overlay.className = 'compare-table-overlay';
 
       // Header
       var header = document.createElement('div');
       header.className = 'compare-header';
       header.innerHTML = '<h2>Comparar cafes</h2>';
-      var closeBtn = document.createElement('button');
-      closeBtn.className = 'compare-close';
-      closeBtn.setAttribute('aria-label', 'Cerrar');
-      closeBtn.textContent = '\u2715';
-      closeBtn.addEventListener('click', closeCompare);
-      header.appendChild(closeBtn);
+      var closeBtn2 = document.createElement('button');
+      closeBtn2.className = 'compare-close';
+      closeBtn2.setAttribute('aria-label', 'Cerrar');
+      closeBtn2.textContent = '\u2715';
+      closeBtn2.addEventListener('click', closeCompareTable);
+      header.appendChild(closeBtn2);
       overlay.appendChild(header);
 
-      // Mobile tabs
-      var tabs = document.createElement('div');
-      tabs.className = 'compare-tabs';
-      for (var t = 0; t < 2; t++) {
-        var tabBtn = document.createElement('button');
-        tabBtn.className = 'compare-tab-btn' + (t === 0 ? ' is-active' : '');
-        tabBtn.textContent = 'Cafe ' + (t + 1);
-        tabBtn.setAttribute('data-tab', t);
-        tabBtn.addEventListener('click', (function (idx) {
-          return function () { switchTab(idx); };
-        })(t));
-        tabs.appendChild(tabBtn);
-      }
-      overlay.appendChild(tabs);
+      // Content area for HTMX
+      var content = document.createElement('div');
+      content.className = 'compare-table-content';
+      content.id = 'compare-table-content';
+      overlay.appendChild(content);
 
-      // Slots container
-      var slotsContainer = document.createElement('div');
-      slotsContainer.className = 'compare-slots';
-
-      for (var s = 0; s < 2; s++) {
-        var slot = document.createElement('div');
-        slot.className = 'compare-slot' + (s === 0 ? ' is-active-tab' : '');
-        slot.setAttribute('data-slot', s);
-
-        // Decide what to load in this slot
-        var url;
-        if (prefillCoffeeId && s === 0) {
-          url = '/coffees/' + prefillCoffeeId + '/compare-detail?slot=0';
-        } else {
-          url = '/coffees/compare-search?slot=' + s;
-        }
-
-        slot.setAttribute('hx-get', url);
-        slot.setAttribute('hx-trigger', 'load');
-        slot.setAttribute('hx-swap', 'innerHTML');
-        slotsContainer.appendChild(slot);
-      }
-
-      overlay.appendChild(slotsContainer);
       document.body.appendChild(overlay);
-      compareOverlay = overlay;
+      compareOverlayEl = overlay;
       document.body.classList.add('card-expanded-open');
 
-      // Let HTMX process the new elements (triggers hx-trigger="load")
-      htmx.process(overlay);
-
-      // Animate in via double rAF
+      // Animate in
       requestAnimationFrame(function () {
         requestAnimationFrame(function () {
           overlay.classList.add('is-open');
         });
       });
+
+      // Load table via HTMX
+      loadCompareTableContent();
     }
 
-    function closeCompare() {
-      if (!compareOverlay) return;
-      var overlay = compareOverlay;
-      var backdrop = compareBackdrop;
-      compareOverlay = null;
-      compareBackdrop = null;
+    function loadCompareTableContent() {
+      var list = getCompareList();
+      var params = list.map(function (item) { return 'ids=' + item.id; }).join('&');
+      var target = document.getElementById('compare-table-content');
+      if (target) {
+        htmx.ajax('GET', '/coffees/compare-table?' + params, { target: target, swap: 'innerHTML' });
+      }
+    }
+
+    function closeCompareTable() {
+      if (!compareOverlayEl) return;
+      var overlay = compareOverlayEl;
+      var backdrop = compareBackdropEl;
+      compareOverlayEl = null;
+      compareBackdropEl = null;
 
       if (backdrop) backdrop.classList.remove('is-visible');
       overlay.classList.remove('is-open');
@@ -356,27 +431,28 @@
       setTimeout(cleanup, 500);
     }
 
-    function switchTab(slotIndex) {
-      if (!compareOverlay) return;
-      var tabBtns = compareOverlay.querySelectorAll('.compare-tab-btn');
-      var slots = compareOverlay.querySelectorAll('.compare-slot');
-      tabBtns.forEach(function (btn, i) {
-        btn.classList.toggle('is-active', i === slotIndex);
-      });
-      slots.forEach(function (slot, i) {
-        slot.classList.toggle('is-active-tab', i === slotIndex);
-      });
-    }
-
     // Close on Escape
     document.addEventListener('keydown', function (e) {
-      if (e.key === 'Escape' && compareOverlay) closeCompare();
+      if (e.key === 'Escape' && compareOverlayEl) closeCompareTable();
     });
 
-    // Expose globally so buttons can call it
-    window.openCompare = openCompare;
-    })();
-    </script>
+    // Sync state on page load and after HTMX swaps
+    document.addEventListener('DOMContentLoaded', function () {
+      syncCompareButtons();
+      updateCompareBar();
+    });
+    document.body.addEventListener('htmx:load', function () {
+      syncCompareButtons();
+      updateCompareBar();
+    });
+
+    // Expose functions globally
+    window.toggleCompare = toggleCompare;
+    window.removeFromCompare = removeFromCompare;
+    window.clearCompare = clearCompare;
+    window.openCompareTable = openCompareTable;
+  })();
+  </script>
     <script>
     // ── Range Sliders ───────────────────────────────────────────
     function initRangeSliders(container) {

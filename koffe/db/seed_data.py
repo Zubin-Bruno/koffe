@@ -44,6 +44,13 @@ SAMPLE_ROASTERS = [
         "country": "Argentina",
         "scraper_module": "koffe.scrapers.sites.mendel_tostadores",
     },
+    {
+        "name": "Flat and White",
+        "slug": "flat-and-white",
+        "website_url": "https://flatnwhite.com",
+        "country": "Argentina",
+        "scraper_module": "koffe.scrapers.sites.flat_and_white",
+    },
 ]
 
 
@@ -66,6 +73,38 @@ def seed_roasters_if_empty() -> bool:
         db.commit()
         logger.info(f"Auto-seeded {len(SAMPLE_ROASTERS)} roasters into empty DB")
         return True
+    finally:
+        db.close()
+
+
+def seed_missing_roasters() -> bool:
+    """Insert any roasters from SAMPLE_ROASTERS that are not yet in the DB.
+
+    Unlike seed_roasters_if_empty(), this runs even when the table already
+    has rows — it checks each roaster individually by slug and only inserts
+    the ones that are missing.
+
+    Returns True if any new roasters were inserted, False otherwise.
+    """
+    db = SessionLocal()
+    try:
+        added = 0
+        for r_data in SAMPLE_ROASTERS:
+            existing = db.query(Roaster).filter(Roaster.slug == r_data["slug"]).first()
+            if existing:
+                logger.debug(f"Roaster '{r_data['name']}' already in DB — skipping")
+                continue
+            db.add(Roaster(**r_data))
+            logger.info(f"Seeded missing roaster: {r_data['name']}")
+            added += 1
+
+        if added:
+            db.commit()
+            logger.info(f"Seeded {added} missing roaster(s)")
+        else:
+            logger.info("All roasters already present in DB — nothing to seed")
+
+        return added > 0
     finally:
         db.close()
 

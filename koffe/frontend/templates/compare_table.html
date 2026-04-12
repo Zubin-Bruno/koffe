@@ -1,0 +1,189 @@
+{# Comparison table partial — loaded via HTMX into the compare overlay #}
+{% if coffees %}
+<div class="compare-table-wrapper">
+  <table class="compare-table">
+    {# ── Header row: coffee name + remove button ── #}
+    <thead>
+      <tr>
+        <th class="compare-label"></th>
+        {% for c in coffees %}
+        <th class="compare-col-header">
+          <button class="compare-remove-btn" onclick="removeFromCompare({{ c.id }})" aria-label="Quitar">&times;</button>
+          <span class="compare-col-name">{{ c.name }}</span>
+        </th>
+        {% endfor %}
+      </tr>
+    </thead>
+    <tbody>
+      {# ── Image ── #}
+      <tr>
+        <td class="compare-label">Imagen</td>
+        {% for c in coffees %}
+        <td class="compare-cell">
+          <img class="compare-cell-img" src="{{ c.image_url or '/static/images/coffee-placeholder.svg' }}"
+               alt="{{ c.name }}" onerror="this.src='/static/images/coffee-placeholder.svg'" />
+        </td>
+        {% endfor %}
+      </tr>
+
+      {# ── Roaster ── #}
+      <tr>
+        <td class="compare-label">Tostador</td>
+        {% for c in coffees %}
+        <td class="compare-cell {{ 'compare-cell--diff' if diffs.roaster_name }}">{{ c.roaster_name or '—' }}</td>
+        {% endfor %}
+      </tr>
+
+      {# ── Origin ── #}
+      <tr>
+        <td class="compare-label">Origen</td>
+        {% for c in coffees %}
+        <td class="compare-cell {{ 'compare-cell--diff' if diffs.origin_country }}">{{ c.origin_country or '—' }}</td>
+        {% endfor %}
+      </tr>
+
+      {# ── Process ── #}
+      <tr>
+        <td class="compare-label">Proceso</td>
+        {% for c in coffees %}
+        <td class="compare-cell {{ 'compare-cell--diff' if diffs.process }}">{{ c.process or '—' }}</td>
+        {% endfor %}
+      </tr>
+
+      {# ── Variety ── #}
+      <tr>
+        <td class="compare-label">Variedad</td>
+        {% for c in coffees %}
+        <td class="compare-cell {{ 'compare-cell--diff' if diffs.variety }}">{{ c.variety or '—' }}</td>
+        {% endfor %}
+      </tr>
+
+      {# ── Altitude ── #}
+      <tr>
+        <td class="compare-label">Altitud</td>
+        {% for c in coffees %}
+        <td class="compare-cell {{ 'compare-cell--diff' if diffs.altitude_masl }}">
+          {{ (c.altitude_masl | string + ' m') if c.altitude_masl else '—' }}
+        </td>
+        {% endfor %}
+      </tr>
+
+      {# ── Roast level ── #}
+      <tr>
+        <td class="compare-label">Tueste</td>
+        {% for c in coffees %}
+        <td class="compare-cell {{ 'compare-cell--diff' if diffs.roast_level }}">{{ c.roast_level or '—' }}</td>
+        {% endfor %}
+      </tr>
+
+      {# ── Price ── #}
+      <tr>
+        <td class="compare-label">Precio</td>
+        {% for c in coffees %}
+        <td class="compare-cell {{ 'compare-cell--diff' if diffs.price_display }}">
+          <strong>{{ c.price_display or '—' }}</strong>
+        </td>
+        {% endfor %}
+      </tr>
+
+      {# ── Weight ── #}
+      <tr>
+        <td class="compare-label">Peso</td>
+        {% for c in coffees %}
+        <td class="compare-cell {{ 'compare-cell--diff' if diffs.weight_grams }}">
+          {{ (c.weight_grams | string + 'g') if c.weight_grams else '—' }}
+        </td>
+        {% endfor %}
+      </tr>
+
+      {# ── Acidity bar ── #}
+      <tr>
+        <td class="compare-label">Acidez</td>
+        {% for c in coffees %}
+        <td class="compare-cell {{ 'compare-cell--diff' if diffs.acidity }}">
+          {% if c.acidity %}
+          <div class="compare-bar-row">
+            <div class="exp-bar-track"><div class="exp-bar-fill" style="width:{{ (c.acidity / 5 * 100) | int }}%"></div></div>
+            <span class="exp-bar-value">{{ c.acidity | int }}/5</span>
+          </div>
+          {% else %}—{% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      {# ── Body bar ── #}
+      <tr>
+        <td class="compare-label">Cuerpo</td>
+        {% for c in coffees %}
+        <td class="compare-cell {{ 'compare-cell--diff' if diffs.body }}">
+          {% if c.body %}
+          <div class="compare-bar-row">
+            <div class="exp-bar-track"><div class="exp-bar-fill" style="width:{{ (c.body / 5 * 100) | int }}%"></div></div>
+            <span class="exp-bar-value">{{ c.body | int }}/5</span>
+          </div>
+          {% else %}—{% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      {# ── Sweetness bar ── #}
+      <tr>
+        <td class="compare-label">Dulzura</td>
+        {% for c in coffees %}
+        <td class="compare-cell {{ 'compare-cell--diff' if diffs.sweetness }}">
+          {% if c.sweetness %}
+          <div class="compare-bar-row">
+            <div class="exp-bar-track"><div class="exp-bar-fill" style="width:{{ (c.sweetness / 5 * 100) | int }}%"></div></div>
+            <span class="exp-bar-value">{{ c.sweetness | int }}/5</span>
+          </div>
+          {% else %}—{% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      {# ── Tasting notes ── #}
+      <tr>
+        <td class="compare-label">Notas de cata</td>
+        {% for c in coffees %}
+        <td class="compare-cell">
+          {% set notes = c.tasting_notes if c.tasting_notes else c.attributes.get('tasting_notes', []) %}
+          {% if notes %}
+          <div class="compare-tags">
+            {% for note in notes %}<span class="tag tag--notes">{{ note }}</span>{% endfor %}
+          </div>
+          {% else %}—{% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      {# ── Brew methods ── #}
+      <tr>
+        <td class="compare-label">Preparacion</td>
+        {% for c in coffees %}
+        <td class="compare-cell">
+          {% if c.brew_methods %}
+          <div class="compare-tags">
+            {% for m in c.brew_methods %}<span class="tag tag--brew">{{ m }}</span>{% endfor %}
+          </div>
+          {% else %}—{% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+
+      {# ── Shop link ── #}
+      <tr>
+        <td class="compare-label">Link</td>
+        {% for c in coffees %}
+        <td class="compare-cell">
+          <a class="compare-shop-link" href="{{ c.url }}" target="_blank" rel="noopener">Ver en tienda &rarr;</a>
+        </td>
+        {% endfor %}
+      </tr>
+    </tbody>
+  </table>
+</div>
+{% else %}
+<div class="compare-empty-state">
+  <p>No se encontraron los cafes seleccionados.</p>
+</div>
+{% endif %}
