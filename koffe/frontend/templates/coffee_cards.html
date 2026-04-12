@@ -39,9 +39,6 @@
         <div class="card-footer">
           <span class="card-price">
             {% if coffee.price_display %}{{ coffee.price_display }}{% else %}—{% endif %}
-            {% if coffee.price_per_250g_display %}
-            <span class="card-price-unit">{{ coffee.price_per_250g_display }}</span>
-            {% endif %}
           </span>
           {% if coffee.weight_grams %}
           <span class="card-weight">{{ coffee.weight_grams }}g</span>
@@ -162,9 +159,6 @@
             <span class="exp-price">
               {% if coffee.price_display %}{{ coffee.price_display }}{% else %}—{% endif %}
             </span>
-            {% if coffee.price_per_250g_display %}
-            <span class="exp-price-unit">{{ coffee.price_per_250g_display }}</span>
-            {% endif %}
             {% if coffee.weight_grams %}
             <span class="exp-weight">· {{ coffee.weight_grams }}g</span>
             {% endif %}
