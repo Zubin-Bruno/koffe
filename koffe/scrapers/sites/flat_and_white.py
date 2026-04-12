@@ -5,6 +5,7 @@ Argentine specialty roaster. WooCommerce/WordPress platform, Playwright + select
 Data is extracted from the "Ficha Técnica" section on each product page.
 """
 
+import json
 import re
 
 from loguru import logger
@@ -130,13 +131,43 @@ class FlatAndWhiteScraper(BaseScraper):
             return None
 
         # --- Price ---
-        # WooCommerce sale prices wrap the real amount in an <ins> tag.
-        # We check that first; if absent, fall back to the regular .price .amount.
-        price_node = (
-            tree.css_first(".price ins .amount") or
-            tree.css_first(".price .amount")
-        )
-        price_cents = parse_price_cents(price_node.text() if price_node else None)
+        # Primary: extract from JSON-LD structured data (most reliable,
+        # avoids Wayra Cuotas installment calculator polluting .amount elements)
+        price_cents = None
+        for script_node in tree.css('script[type="application/ld+json"]'):
+            try:
+                ld = json.loads(script_node.text())
+                # JSON-LD can be a flat Product object or a @graph array
+                # with multiple items (Place, Organization, Product, etc.).
+                # We need to find the item that has "offers".
+                candidates = [ld]  # flat case
+                if "@graph" in ld:
+                    candidates = ld["@graph"]
+                for item in candidates:
+                    offers = item.get("offers") if isinstance(item, dict) else None
+                    if not offers:
+                        continue
+                    # Single offer has "price"; variable products use
+                    # AggregateOffer with "lowPrice" (cheapest variant = 250g bag).
+                    if isinstance(offers, list):
+                        raw_price = offers[0].get("price")
+                    else:
+                        raw_price = offers.get("price") or offers.get("lowPrice")
+                    if raw_price:
+                        price_cents = parse_price_cents(str(raw_price))
+                        break
+                if price_cents is not None:
+                    break
+            except (json.JSONDecodeError, KeyError, IndexError, TypeError):
+                pass
+
+        # Fallback: CSS selector (less reliable due to payment calculator plugins)
+        if price_cents is None:
+            price_node = (
+                tree.css_first(".price ins .amount") or
+                tree.css_first(".price .amount")
+            )
+            price_cents = parse_price_cents(price_node.text() if price_node else None)
 
         # --- Ficha Técnica ---
         # Get the full page text and find the section below "Ficha Técnica"
