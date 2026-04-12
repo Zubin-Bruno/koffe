@@ -41,6 +41,11 @@ def _has_any_filter(origin, process, roaster_id, variety, brew_method,
 
 
 def _coffee_to_dict(c: Coffee) -> dict:
+    price_per_250g_display = None
+    if c.price_cents and c.weight_grams:
+        per_250g = c.price_cents / 100 * 250 / c.weight_grams
+        price_per_250g_display = f"${per_250g:,.0f}/250g"
+
     return {
         "id": c.id,
         "roaster_id": c.roaster_id,
@@ -49,6 +54,7 @@ def _coffee_to_dict(c: Coffee) -> dict:
         "url": c.url,
         "price_cents": c.price_cents,
         "price_display": f"${c.price_cents / 100:,.0f}" if c.price_cents else None,
+        "price_per_250g_display": price_per_250g_display,
         "currency": c.currency,
         "weight_grams": c.weight_grams,
         "is_available": c.is_available,
@@ -435,101 +441,35 @@ async def coffees_partial(
     )
 
 
-@router.get("/coffees/compare-search", response_class=HTMLResponse, include_in_schema=False)
-async def compare_search(
+@router.get("/coffees/compare-table", response_class=HTMLResponse, include_in_schema=False)
+async def compare_table(
     request: Request,
-    slot: str = Query("0"),
-    origin: list[str] = Query(default=[]),
-    process: list[str] = Query(default=[]),
-    roaster_id: list[str] = Query(default=[]),
-    acidity_min: str | None = None,
-    acidity_max: str | None = None,
-    sweetness_min: str | None = None,
-    sweetness_max: str | None = None,
-    body_min: str | None = None,
-    body_max: str | None = None,
-    variety: list[str] = Query(default=[]),
-    brew_method: list[str] = Query(default=[]),
-    search: str | None = None,
-    tasting_note: list[str] = Query(default=[]),
+    ids: list[int] = Query(default=[]),
     db: Session = Depends(get_db),
 ):
-    """HTMX partial — filter form + card grid for one comparison slot."""
-    roaster_id_int = [_parse_int(r) for r in roaster_id if _parse_int(r) is not None]
-    acidity_min_int = _parse_int(acidity_min)
-    acidity_max_int = _parse_int(acidity_max)
-    sweetness_min_int = _parse_int(sweetness_min)
-    sweetness_max_int = _parse_int(sweetness_max)
-    body_min_int = _parse_int(body_min)
-    body_max_int = _parse_int(body_max)
+    """HTMX partial — comparison table for selected coffees (max 5)."""
+    if not ids:
+        return HTMLResponse("<p>No hay cafés seleccionados</p>")
 
-    has_filters = _has_any_filter(
-        origin, process, roaster_id_int, variety, brew_method,
-        acidity_min_int, acidity_max_int, sweetness_min_int,
-        sweetness_max_int, body_min_int, body_max_int, search,
-        tasting_note,
-    )
+    ids = ids[:5]
+    coffees_raw = db.query(Coffee).filter(Coffee.id.in_(ids)).all()
+    coffees = [_coffee_to_dict(c) for c in coffees_raw]
 
-    if has_filters:
-        q = db.query(Coffee).filter(Coffee.is_available == True)
-        q = _apply_filters(q, origin, process, roaster_id_int,
-                           acidity_min_int, acidity_max_int,
-                           sweetness_min_int, sweetness_max_int,
-                           body_min_int, body_max_int,
-                           variety, brew_method, search, tasting_note)
-        coffees = q.order_by(Coffee.name).limit(100).all()
-    else:
-        coffees = []
-
-    opts = _get_filter_options(db)
-    templates = request.app.state.templates
-    return templates.TemplateResponse(
-        request, "compare_search.html",
-        {
-            "slot": slot,
-            "coffees": [_coffee_to_dict(c) for c in coffees],
-            "total": len(coffees),
-            "has_filters": has_filters,
-            "filters": {
-                "origin": origin,
-                "process": process,
-                "roaster_id": roaster_id_int,
-                "acidity_min": acidity_min_int or "",
-                "acidity_max": acidity_max_int or "",
-                "sweetness_min": sweetness_min_int or "",
-                "sweetness_max": sweetness_max_int or "",
-                "body_min": body_min_int or "",
-                "body_max": body_max_int or "",
-                "variety": variety,
-                "brew_method": brew_method,
-                "search": search or "",
-                "tasting_notes": tasting_note,
-            },
-            **opts,
-        },
-    )
-
-
-@router.get("/coffees/{coffee_id}/compare-detail", response_class=HTMLResponse, include_in_schema=False)
-async def compare_detail(
-    coffee_id: int,
-    request: Request,
-    slot: str = Query("0"),
-    db: Session = Depends(get_db),
-):
-    """HTMX partial — selected coffee detail inside a comparison slot."""
-    from fastapi import HTTPException
-
-    coffee = db.query(Coffee).filter(Coffee.id == coffee_id).first()
-    if not coffee:
-        raise HTTPException(status_code=404, detail="Coffee not found")
+    # Pre-compute which attributes differ across selected coffees
+    diff_keys = [
+        "roaster_name", "origin_country", "process", "variety",
+        "altitude_masl", "roast_level", "price_display", "weight_grams",
+        "acidity", "sweetness", "body",
+    ]
+    diffs = {}
+    for key in diff_keys:
+        values = [c.get(key) for c in coffees]
+        # If there are at least 2 different non-None values, mark as diff
+        unique = set(v for v in values if v is not None)
+        diffs[key] = len(unique) > 1
 
     templates = request.app.state.templates
     return templates.TemplateResponse(
-        request, "compare_detail.html",
-        {
-            "coffee": _coffee_to_dict(coffee),
-            "slot": slot,
-            "query_string": str(request.url.query)
-        },
+        request, "compare_table.html",
+        {"coffees": coffees, "diffs": diffs},
     )

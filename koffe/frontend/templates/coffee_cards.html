@@ -12,6 +12,13 @@
         <img src="{{ coffee.image_url or '/static/images/coffee-placeholder.svg' }}"
              alt="{{ coffee.name }}" loading="lazy"
              onerror="this.src='/static/images/coffee-placeholder.svg'" />
+        <button class="compare-add-btn" data-coffee-id="{{ coffee.id }}"
+                data-coffee-image="{{ coffee.image_url or '/static/images/coffee-placeholder.svg' }}"
+                data-coffee-name="{{ coffee.name }}"
+                onclick="event.stopPropagation(); toggleCompare({{ coffee.id }}, '{{ coffee.image_url or '/static/images/coffee-placeholder.svg' }}', '{{ coffee.name | replace("'", "\\'") }}')"
+                aria-label="Agregar a comparar">
+          <span class="compare-add-icon">+</span>
+        </button>
       </div>
       <div class="card-body">
         <h2 class="card-name">{{ coffee.name }}</h2>
@@ -32,6 +39,9 @@
         <div class="card-footer">
           <span class="card-price">
             {% if coffee.price_display %}{{ coffee.price_display }}{% else %}—{% endif %}
+            {% if coffee.price_per_250g_display %}
+            <span class="card-price-unit">{{ coffee.price_per_250g_display }}</span>
+            {% endif %}
           </span>
           {% if coffee.weight_grams %}
           <span class="card-weight">{{ coffee.weight_grams }}g</span>
@@ -152,12 +162,15 @@
             <span class="exp-price">
               {% if coffee.price_display %}{{ coffee.price_display }}{% else %}—{% endif %}
             </span>
+            {% if coffee.price_per_250g_display %}
+            <span class="exp-price-unit">{{ coffee.price_per_250g_display }}</span>
+            {% endif %}
             {% if coffee.weight_grams %}
             <span class="exp-weight">· {{ coffee.weight_grams }}g</span>
             {% endif %}
           </div>
-          <button class="exp-compare-btn" onclick="event.stopPropagation(); openCompare({{ coffee.id }})">
-            Comparar
+          <button class="exp-compare-btn" onclick="event.stopPropagation(); toggleCompare({{ coffee.id }}, '{{ coffee.image_url or '/static/images/coffee-placeholder.svg' }}', '{{ coffee.name | replace("'", "\\'") }}')">
+            <span class="exp-compare-label" data-coffee-id="{{ coffee.id }}">+ Comparar</span>
           </button>
           <a class="exp-buy-btn" href="{{ coffee.url }}" target="_blank" rel="noopener">
             Ver en tienda →
