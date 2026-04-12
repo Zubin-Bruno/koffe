@@ -16,8 +16,8 @@
   --radius: 6px;
   --radius-lg: 12px;
   --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --font-display: 'Fraunces', Georgia, 'Times New Roman', serif;
-  --font-body:    'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-display: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
+  --font-body:    system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', sans-serif;
 }
 
 /* ── Dark mode ─────────────────────────────────────────────── */
@@ -1602,11 +1602,143 @@ body.card-expanded-open { overflow: hidden; }
 }
 
 /* ══════════════════════════════════════════════════════════════
-   COMPARISON OVERLAY
+   COMPARE FEATURE — Add-to-compare button, floating bar, table
    ══════════════════════════════════════════════════════════════ */
 
-/* ── Overlay container ──────────────────────────────────────── */
-.compare-overlay {
+/* ── "+" button on card images ────────────────────────────────── */
+.compare-add-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.85);
+  color: var(--text);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  transition: opacity 0.15s, background 0.15s, color 0.15s, transform 0.15s;
+  z-index: 2;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.15);
+}
+.card-wrapper:hover .compare-add-btn,
+.compare-add-btn.is-selected {
+  opacity: 1;
+}
+.compare-add-btn:hover {
+  background: var(--accent);
+  color: #fff;
+  transform: scale(1.1);
+}
+.compare-add-btn.is-selected {
+  background: var(--accent);
+  color: #fff;
+}
+[data-theme="dark"] .compare-add-btn {
+  background: rgba(36,30,26,0.85);
+  color: var(--text);
+}
+[data-theme="dark"] .compare-add-btn:hover,
+[data-theme="dark"] .compare-add-btn.is-selected {
+  background: var(--accent);
+  color: #fff;
+}
+.card-image { position: relative; }
+
+/* ── "Comparar" button in expanded panel footer ─────────────── */
+.exp-compare-btn {
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 0.55rem 1rem;
+  font-family: var(--font-body);
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 0.15s, color 0.15s, background 0.15s;
+  white-space: nowrap;
+}
+.exp-compare-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(86, 53, 31, 0.06);
+}
+[data-theme="dark"] .exp-compare-btn:hover {
+  background: rgba(154, 95, 55, 0.1);
+}
+
+/* ── Floating compare bar ─────────────────────────────────────── */
+.compare-bar {
+  position: fixed;
+  bottom: 1.25rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 900;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.18), 0 0 0 1px rgba(255,255,255,0.04);
+  animation: compare-bar-in 0.3s ease forwards;
+}
+@keyframes compare-bar-in {
+  from { opacity: 0; transform: translateX(-50%) translateY(20px); }
+  to   { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+.compare-bar-items {
+  display: flex;
+  gap: 0.35rem;
+}
+.compare-bar-thumb {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid var(--border);
+}
+.compare-bar-btn {
+  padding: 0.5rem 1.1rem;
+  background: var(--btn-bg);
+  color: #fff;
+  border: none;
+  border-radius: 999px;
+  font-family: var(--font-body);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.compare-bar-btn:hover {
+  background: var(--accent-hover);
+}
+.compare-bar-clear {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-family: var(--font-body);
+  font-size: 0.82rem;
+  cursor: pointer;
+  text-decoration: underline;
+  transition: color 0.15s;
+  white-space: nowrap;
+}
+.compare-bar-clear:hover {
+  color: var(--text);
+}
+
+/* ── Compare table overlay ────────────────────────────────────── */
+.compare-table-overlay {
   position: fixed;
   z-index: 1000;
   top: 50%; left: 50%;
@@ -1623,17 +1755,17 @@ body.card-expanded-open { overflow: hidden; }
   transition: opacity 0.3s ease, transform 0.3s ease;
   overflow: hidden;
 }
-.compare-overlay.is-open {
+.compare-table-overlay.is-open {
   opacity: 1;
   transform: translate(-50%, -50%) scale(1);
 }
-.compare-overlay.is-closing {
+.compare-table-overlay.is-closing {
   opacity: 0;
   transform: translate(-50%, -50%) scale(0.96);
   transition: opacity 0.25s ease, transform 0.25s ease;
 }
 
-/* ── Header ─────────────────────────────────────────────────── */
+/* Header (shared style) */
 .compare-header {
   display: flex;
   align-items: center;
@@ -1661,420 +1793,146 @@ body.card-expanded-open { overflow: hidden; }
 }
 .compare-close:hover { background: var(--border); color: var(--text); }
 
-/* ── Mobile tabs (hidden on desktop) ─────────────────────────── */
-.compare-tabs {
-  display: none;
-  flex-shrink: 0;
-}
-.compare-tab-btn {
+/* Content area */
+.compare-table-content {
   flex: 1;
-  padding: 0.6rem;
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  font-weight: 600;
-  background: transparent;
-  border: none;
-  border-bottom: 2px solid transparent;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: color 0.15s, border-color 0.15s;
-}
-.compare-tab-btn.is-active {
-  color: var(--accent);
-  border-bottom-color: var(--accent);
-}
-
-/* ── Slots container (side-by-side) ─────────────────────────── */
-.compare-slots {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-  overflow: hidden;
-}
-.compare-slot {
-  flex: 1;
-  overflow-y: auto;
-  overflow-x: hidden;
+  overflow: auto;
   padding: 1.25rem;
 }
-.compare-slot + .compare-slot {
-  border-left: 1px solid var(--border);
+
+/* ── Comparison table ─────────────────────────────────────────── */
+.compare-table-wrapper {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.compare-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 500px;
+  table-layout: fixed;
+}
+.compare-table th,
+.compare-table td {
+  padding: 0.6rem 0.85rem;
+  vertical-align: middle;
+  font-size: 0.92rem;
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+.compare-table th {
+  font-weight: 600;
 }
 
-/* ── Slot content ────────────────────────────────────────────── */
-.compare-slot-content {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
+/* Sticky left label column */
+.compare-label {
+  position: sticky;
+  left: 0;
+  background: var(--surface);
+  z-index: 2;
+  width: 120px;
+  min-width: 120px;
+  max-width: 120px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-muted);
+  white-space: nowrap;
 }
 
-/* ── Filter form inside a slot ──────────────────────────────── */
-.compare-filter-form {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+/* Column header: coffee name + remove button */
+.compare-col-header {
+  min-width: 180px;
+  position: relative;
 }
-.compare-filter-bar {
+.compare-col-name {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.3;
+}
+.compare-remove-btn {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.4rem;
+  width: 22px; height: 22px;
+  border-radius: 50%;
+  border: none;
+  background: var(--tag-bg);
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: background 0.15s, color 0.15s;
+}
+.compare-remove-btn:hover {
+  background: var(--border);
+  color: var(--text);
+}
+
+/* Cell content */
+.compare-cell {
+  min-width: 180px;
+}
+.compare-cell-img {
+  width: 80px;
+  height: 80px;
+  object-fit: cover;
+  border-radius: var(--radius);
+}
+
+/* Difference highlight */
+.compare-cell--diff {
+  background: rgba(86, 53, 31, 0.06);
+}
+[data-theme="dark"] .compare-cell--diff {
+  background: rgba(201, 160, 96, 0.08);
+}
+
+/* Tags inside table cells */
+.compare-tags {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.5rem;
-  align-items: flex-end;
-}
-.compare-filter-bar label,
-.compare-filter-bar .filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-.compare-filter-bar select,
-.compare-filter-advanced select {
-  padding: 0.55rem 0.9rem;
-  border: none;
-  border-bottom: 2px solid var(--border);
-  border-radius: 0;
-  background: transparent;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 1.05rem;
-  cursor: pointer;
-  min-width: 120px;
-  transition: border-color 0.15s;
-  appearance: none;
-  -webkit-appearance: none;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238a7e74'/%3E%3C/svg%3E");
-  background-repeat: no-repeat;
-  background-position: right 0.4rem center;
-  padding-right: 1.3rem;
-}
-.compare-filter-bar select:focus,
-.compare-filter-advanced select:focus {
-  outline: none;
-  border-bottom-color: var(--accent);
-}
-.compare-filter-bar select.filter-narrow,
-.compare-filter-advanced select.filter-narrow {
-  min-width: 52px;
+  gap: 0.2rem;
 }
 
-/* Search input inside compare */
-.compare-filter-search {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-  flex: 1;
-  min-width: 100px;
-}
-.compare-filter-search input {
-  padding: 0.55rem 0.9rem;
-  border: none;
-  border-bottom: 2px solid var(--border);
-  border-radius: 0;
-  background: transparent;
-  color: var(--text);
-  font-family: var(--font-body);
-  font-size: 1.05rem;
-  transition: border-color 0.15s;
-}
-.compare-filter-search input:focus {
-  outline: none;
-  border-bottom-color: var(--accent);
-}
-.compare-filter-search input::placeholder {
-  color: var(--text-muted);
-  opacity: 0.6;
-}
-
-/* "Mas" toggle for advanced filters */
-.compare-more-btn {
+/* Progress bars inside table cells */
+.compare-bar-row {
   display: flex;
   align-items: center;
-  gap: 0.25rem;
-  padding: 0.35rem 0.65rem;
-  border: 1px solid var(--border);
-  border-radius: 99px;
-  background: transparent;
-  color: var(--text-muted);
-  font-family: var(--font-body);
-  font-size: 0.9rem;
-  font-weight: 500;
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s;
-  white-space: nowrap;
-  margin-bottom: 2px;
+  gap: 0.4rem;
 }
-.compare-more-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-}
-.compare-more-btn.is-active {
-  background: var(--btn-bg);
-  border-color: var(--btn-bg);
-  color: var(--btn-text);
-}
-
-.compare-more-btn .filter-toggle-icon {
-  display: inline-block;
-  font-size: 0.9rem;
-  line-height: 1;
-  transition: transform 0.25s ease;
-}
-.compare-more-btn.is-active .filter-toggle-icon {
-  transform: rotate(45deg);
-}
-
-/* Advanced filters (hidden by default) */
-.compare-filter-advanced {
-  max-height: 0;
-  overflow: hidden;
-  transition: max-height 0.3s ease, padding 0.3s ease;
-}
-.compare-filter-advanced.is-open {
-  max-height: none;
-  overflow: visible;
-  padding-top: 0.5rem;
-}
-.compare-filter-advanced-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.5rem 0.75rem;
-}
-.compare-filter-advanced-grid label,
-.compare-filter-advanced-grid .filter-group {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-  font-size: 0.95rem;
-  font-weight: 600;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-/* ── Tasting notes dropdown: 3-column grid in compare panel ── */
-.compare-filter-advanced-grid .dropdown-check-menu {
-  display: none;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.2rem 0.5rem;
-  /* position: absolute is inherited from base .dropdown-check-menu */
-  max-height: 200px;
-  overflow-y: auto;
-}
-.compare-filter-advanced-grid .dropdown-check-menu.is-open {
-  display: grid;
-}
-
-/* ── Results inside a slot ──────────────────────────────────── */
-.compare-results {
+.compare-bar-row .exp-bar-track {
   flex: 1;
-  min-height: 0;
-}
-.compare-results-count {
-  color: var(--text-muted);
-  font-size: 0.88rem;
-  margin-bottom: 0.5rem;
+  min-width: 60px;
 }
 
-/* Welcome / empty states */
-.compare-welcome,
-.compare-empty {
+/* Shop link */
+.compare-shop-link {
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: color 0.15s;
+}
+.compare-shop-link:hover {
+  color: var(--accent-hover);
+  text-decoration: underline;
+}
+
+/* Empty state */
+.compare-empty-state {
   display: flex;
   align-items: center;
   justify-content: center;
-  text-align: center;
-  padding: 2rem 1rem;
+  padding: 3rem 1rem;
   color: var(--text-muted);
-  font-size: 0.88rem;
+  font-size: 0.92rem;
 }
 
-/* ── Compact card grid ──────────────────────────────────────── */
-.compare-card-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1rem;
-}
-.compare-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
-  cursor: pointer;
-  transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
-}
-.compare-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-  border-color: var(--accent);
-}
-.compare-card-image {
-  height: 220px;
-  overflow: hidden;
-  background: var(--bg);
-}
-.compare-card-image img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  transition: transform 0.2s;
-}
-.compare-card:hover .compare-card-image img {
-  transform: scale(1.04);
-}
-.compare-card-body {
-  padding: 0.85rem 0.95rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-.compare-card-name {
-  font-size: 1.15rem;
-  font-weight: 600;
-  line-height: 1.25;
-}
-.compare-card-roaster {
-  font-size: 0.95rem;
-  color: var(--text-muted);
-}
-.compare-card-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-}
-.compare-card-tags .tag {
-  font-size: 0.82rem;
-}
-.compare-card-notes {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.25rem;
-  width: 100%;
-}
-.compare-card-notes .tag {
-  font-size: 0.82rem;
-}
-.compare-card-footer {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  margin-top: 0.15rem;
-  padding-top: 0.3rem;
-  border-top: 1px solid var(--border);
-}
-.compare-card-price {
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-.compare-card-weight {
-  font-size: 0.82rem;
-  color: var(--text-muted);
-}
-
-/* ── Detail view inside a slot ──────────────────────────────── */
-.compare-change-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.4rem 0.8rem;
-  font-family: var(--font-body);
-  font-size: 0.8rem;
-  font-weight: 500;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-  align-self: flex-start;
-}
-.compare-change-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(86, 53, 31, 0.05);
-}
-[data-theme="dark"] .compare-change-btn:hover {
-  background: rgba(154, 95, 55, 0.08);
-}
-
-.compare-detail {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
-.compare-detail-top {
-  display: grid;
-  grid-template-columns: 230px 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
-}
-.compare-detail-image {
-  width: 230px; height: 230px;
-  overflow: hidden;
-  background: var(--bg);
-  border-radius: var(--radius);
-}
-.compare-detail-image img {
-  width: 100%; height: 100%;
-  object-fit: cover;
-}
-.compare-detail-info {
-  display: flex;
-  flex-direction: column;
-  padding-top: 0.15rem;
-}
-.compare-detail-name {
-  font-family: var(--font-display);
-  font-size: 1.5rem;
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.02em;
-  margin-bottom: 0.2rem;
-}
-.compare-detail-roaster {
-  font-size: 0.9rem;
-  color: var(--text-muted);
-  margin-bottom: 0.5rem;
-}
-.compare-detail-footer {
-  border-top: 1px solid var(--border);
-  padding-top: 0.75rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-}
-
-/* ── "Comparar" button in expanded panel footer ─────────────── */
-.exp-compare-btn {
-  background: transparent;
-  border: 1px solid var(--border);
-  border-radius: var(--radius);
-  padding: 0.55rem 1rem;
-  font-family: var(--font-body);
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-muted);
-  cursor: pointer;
-  transition: border-color 0.15s, color 0.15s, background 0.15s;
-  white-space: nowrap;
-}
-.exp-compare-btn:hover {
-  border-color: var(--accent);
-  color: var(--accent);
-  background: rgba(86, 53, 31, 0.06);
-}
-[data-theme="dark"] .exp-compare-btn:hover {
-  background: rgba(154, 95, 55, 0.1);
-}
-
-/* ── Mobile comparison ──────────────────────────────────────── */
+/* ── Mobile compare ───────────────────────────────────────────── */
 @media (max-width: 600px) {
-  .compare-overlay {
+  .compare-table-overlay {
     top: auto !important;
     left: 0 !important;
     bottom: 0 !important;
@@ -2084,58 +1942,35 @@ body.card-expanded-open { overflow: hidden; }
     border-radius: 16px 16px 0 0;
     transition: opacity 0.3s ease, transform 0.3s ease;
   }
-  .compare-overlay.is-open {
+  .compare-table-overlay.is-open {
     transform: translateY(0) !important;
   }
-  .compare-overlay.is-closing {
+  .compare-table-overlay.is-closing {
     transform: translateY(100%) !important;
   }
 
-  .compare-tabs {
-    display: flex;
-    border-bottom: 1px solid var(--border);
+  .compare-bar {
+    left: 0;
+    right: 0;
+    bottom: 0;
+    transform: none;
+    border-radius: 0;
+    justify-content: center;
+    animation: none;
   }
-
-  .compare-slots {
-    flex-direction: column;
-  }
-  .compare-slot {
+  .compare-bar-items {
     display: none;
   }
-  .compare-slot + .compare-slot {
-    border-left: none;
-  }
-  .compare-slot.is-active-tab {
-    display: block;
-  }
 
-  .compare-filter-bar {
-    flex-direction: column;
-    align-items: stretch;
+  .compare-label {
+    width: 90px;
+    min-width: 90px;
+    max-width: 90px;
+    font-size: 0.72rem;
   }
-  .compare-filter-bar label,
-  .compare-filter-bar .filter-group { width: 100%; }
-  .compare-filter-bar select,
-  .compare-filter-advanced select { min-width: 100%; }
-  .compare-filter-bar select.filter-narrow,
-  .compare-filter-advanced select.filter-narrow { min-width: 48%; }
-  .compare-filter-search { width: 100%; }
-  .compare-more-btn { align-self: flex-start; }
-
-  .compare-filter-advanced-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .compare-card-grid {
-    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  }
-
-  .compare-detail-top {
-    grid-template-columns: 120px 1fr;
-    gap: 0.75rem;
-  }
-  .compare-detail-image { width: 120px; height: 120px; }
-  .compare-detail-name { font-size: 1rem; }
+  .compare-col-header { min-width: 140px; }
+  .compare-cell { min-width: 140px; }
+  .compare-cell-img { width: 60px; height: 60px; }
 }
 
 /* ── Range Sliders ────────────────────────────────────────── */
@@ -2541,6 +2376,41 @@ body.card-expanded-open { overflow: hidden; }
   flex: 1;
   min-width: 0;
   text-align: center;
+}
+
+.sidebar-reset-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 0.6rem;
+  border-bottom: 1px solid var(--border);
+  margin-bottom: 1rem;
+}
+
+.sidebar-reset-title {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.reset-filters-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 0.15s;
+}
+
+.reset-filters-btn:hover {
+  opacity: 1;
+  text-decoration: underline;
 }
 
 .incomplete-checkbox {
