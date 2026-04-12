@@ -5,6 +5,7 @@ from loguru import logger
 router = APIRouter(prefix="/api/admin", tags=["admin"])
 
 
+@router.get("/scrape")
 @router.post("/scrape")
 async def trigger_scrape(token: str, background_tasks: BackgroundTasks):
     """
