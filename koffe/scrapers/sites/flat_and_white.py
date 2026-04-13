@@ -43,9 +43,19 @@ class FlatAndWhiteScraper(BaseScraper):
     async def scrape(self, browser) -> list[CoffeeData]:
         # Try the WooCommerce JSON API first — it bypasses CAPTCHA/anti-bot
         # because it's a data endpoint, not a rendered page.
+        self._ip_blocked = False
         coffees = await self._scrape_via_api()
         if coffees:
             return coffees
+
+        # If the API returned an HTML CAPTCHA page, Playwright will also be
+        # blocked by the same IP check — skip it to save 15+ seconds.
+        if self._ip_blocked:
+            logger.warning(
+                "[flat-and-white] IP is blocked by anti-bot — skipping Playwright fallback. "
+                "Use scripts/push_coffees.py from a non-datacenter IP to update production."
+            )
+            return []
 
         # Fallback: use Playwright to load the site in a real browser.
         # This may fail on datacenter IPs due to CAPTCHA, but works locally.
@@ -67,6 +77,16 @@ class FlatAndWhiteScraper(BaseScraper):
                     params={"per_page": 100, "category": COFFEE_CATEGORY_ID},
                 )
                 resp.raise_for_status()
+
+                content_type = resp.headers.get("content-type", "")
+                if "text/html" in content_type:
+                    logger.error(
+                        f"[flat-and-white] API returned HTML instead of JSON — likely CAPTCHA/IP block. "
+                        f"Preview: {resp.text[:200]}"
+                    )
+                    self._ip_blocked = True
+                    return []
+
                 products = resp.json()
         except Exception as e:
             logger.warning(f"[flat-and-white] WooCommerce API request failed: {e}")

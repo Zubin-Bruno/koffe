@@ -1,5 +1,7 @@
 import os
+from typing import Any
 from fastapi import APIRouter, HTTPException, BackgroundTasks
+from pydantic import BaseModel
 from loguru import logger
 
 router = APIRouter(prefix="/api/admin", tags=["admin"])
@@ -113,3 +115,63 @@ async def trigger_scrape(token: str, background_tasks: BackgroundTasks):
     """
 
     return HTMLResponse(content=html_content)
+
+
+# ── Push coffees from a local scrape ─────────────────────────────────────────
+
+class CoffeePayload(BaseModel):
+    external_id: str
+    name: str
+    url: str
+    price_cents: int | None = None
+    currency: str = "ARS"
+    weight_grams: int | None = None
+    image_url: str | None = None
+    origin_country: str | None = None
+    process: str | None = None
+    variety: str | None = None
+    altitude_masl: int | None = None
+    brew_methods: list[str] | None = None
+    attributes: dict[str, Any] = {}
+
+
+class PushCoffeesRequest(BaseModel):
+    roaster_slug: str
+    coffees: list[CoffeePayload]
+
+
+@router.post("/push-coffees")
+async def push_coffees(token: str, body: PushCoffeesRequest):
+    """
+    Accept a list of pre-scraped coffees from a local machine and upsert them
+    into the production DB.  Useful when the production server's IP is blocked
+    by the roaster's anti-bot system.
+
+    Query parameter:
+    - token: Must match ADMIN_TOKEN environment variable
+    """
+    admin_token = os.getenv("ADMIN_TOKEN")
+    if not admin_token:
+        raise HTTPException(status_code=403, detail="ADMIN_TOKEN not configured")
+    if token != admin_token:
+        raise HTTPException(status_code=403, detail="Invalid token")
+
+    from koffe.db.database import SessionLocal
+    from koffe.db.models import Roaster
+    from koffe.scrapers.base import CoffeeData
+    from koffe.scrapers.runner import _upsert_coffees
+
+    db = SessionLocal()
+    try:
+        roaster = db.query(Roaster).filter_by(slug=body.roaster_slug).first()
+        if not roaster:
+            raise HTTPException(
+                status_code=404, detail=f"Roaster '{body.roaster_slug}' not found"
+            )
+
+        coffees = [CoffeeData(**c.model_dump()) for c in body.coffees]
+        _upsert_coffees(db, roaster, coffees)
+        logger.info(f"[push-coffees] Upserted {len(coffees)} coffees for '{body.roaster_slug}'")
+        return {"status": "ok", "upserted": len(coffees)}
+    finally:
+        db.close()
