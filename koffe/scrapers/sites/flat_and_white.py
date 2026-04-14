@@ -110,6 +110,8 @@ class FlatAndWhiteScraper(BaseScraper):
     def _parse_api_product(self, product: dict) -> CoffeeData | None:
         """Convert a single WooCommerce API product JSON into CoffeeData."""
         name = clean_text(product.get("name", ""))
+        name = re.sub(r"\b\d+\s*gr?s?\b", "", name, flags=re.IGNORECASE).strip()
+        name = re.sub(r"\s{2,}", " ", name)
         if not name:
             return None
 
@@ -371,6 +373,8 @@ class FlatAndWhiteScraper(BaseScraper):
             logger.warning(f"[flat-and-white] No product title found at {url}")
             return None
         name = clean_text(name_node.text())
+        name = re.sub(r"\b\d+\s*gr?s?\b", "", name, flags=re.IGNORECASE).strip()
+        name = re.sub(r"\s{2,}", " ", name)
         if not name:
             return None
 
