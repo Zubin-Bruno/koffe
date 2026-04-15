@@ -1,14 +1,31 @@
 import unicodedata
+from urllib.parse import quote, urlparse
 
 from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse
 from sqlalchemy import cast, String, or_, func, text
 from sqlalchemy.orm import Session
 
+from koffe.api.routes.image_proxy import ALLOWED_DOMAINS
 from koffe.db.database import get_db
 from koffe.db.models import Coffee, Roaster
 
 router = APIRouter()
+
+
+def _maybe_proxy(image_url: str | None) -> str | None:
+    """Rewrite image URLs that need proxying through our server.
+
+    If the image's domain is in the proxy allowlist (e.g. cuervocafe.com),
+    return a /api/image-proxy?url=... URL so the browser fetches through us.
+    Otherwise return the original URL unchanged.
+    """
+    if not image_url:
+        return image_url
+    parsed = urlparse(image_url)
+    if parsed.hostname in ALLOWED_DOMAINS:
+        return f"/api/image-proxy?url={quote(image_url, safe='')}"
+    return image_url
 
 
 def _strip_accents(text: str) -> str:
@@ -58,7 +75,7 @@ def _coffee_to_dict(c: Coffee) -> dict:
         "currency": c.currency,
         "weight_grams": c.weight_grams,
         "is_available": c.is_available,
-        "image_url": c.image_url,
+        "image_url": _maybe_proxy(c.image_url),
         "description": c.description,
         "origin_country": c.origin_country,
         "process": c.process,

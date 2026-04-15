@@ -7,7 +7,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from loguru import logger
 
-from koffe.api.routes import admin, chat, coffees, feedback, roasters
+from koffe.api.routes import admin, chat, coffees, feedback, image_proxy, roasters
 from koffe.db.database import create_tables
 from koffe.db.seed_data import apply_curated_intensity, copy_bundled_images, seed_missing_roasters
 
@@ -106,3 +106,4 @@ app.include_router(coffees.router)
 app.include_router(roasters.router)
 app.include_router(chat.router)
 app.include_router(feedback.router)
+app.include_router(image_proxy.router)
