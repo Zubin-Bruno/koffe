@@ -51,6 +51,13 @@ SAMPLE_ROASTERS = [
         "country": "Argentina",
         "scraper_module": "koffe.scrapers.sites.flat_and_white",
     },
+    {
+        "name": "Café Z",
+        "slug": "cafe-z",
+        "website_url": "https://cafez.empretienda.com.ar",
+        "country": "Argentina",
+        "scraper_module": "koffe.scrapers.sites.cafe_z",
+    },
 ]
 
 
